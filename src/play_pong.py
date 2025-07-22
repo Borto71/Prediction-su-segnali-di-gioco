@@ -1,56 +1,3 @@
-# 🏓 Pong Atari - Quickstart Guide
-
-Questa guida ti permette di **installare**, **giocare manualmente**, e **salvare dati** da Pong Atari con Gymnasium e ALE: al termine di ogni partita verranno generati sia un file CSV con i dati che una GIF della partita.
-Funziona sia su **Ubuntu** che su **WSL (Windows Subsystem for Linux)**.
-
----
-
-## 📦 Requisiti
-
-* Python 3.8+ (consigliato Python 3.10 o superiore)
-* pip
-* (Per WSL) Server X11 su Windows, es: [VcXsrv](https://sourceforge.net/projects/vcxsrv/)
-* AutoROM per scaricare le ROM Atari
-
----
-
-## 🚀 Setup passo-passo
-
-### 1. Crea e attiva un ambiente virtuale
-
-```bash
-python3 -m venv venv
-source venv/bin/activate
-```
-
-### 2. Installa le dipendenze principali
-
-```bash
-pip install gymnasium[atari,accept-rom-license]
-pip install ale-py matplotlib pandas imageio pillow
-```
-
-### 3. Scarica le ROM Atari
-
-```bash
-AutoROM --accept-license
-```
-
-### 4. (Solo per WSL) Avvia il server X11 su Windows
-
-Esempio: avvia **VcXsrv** su Windows, poi in WSL esegui:
-
-```bash
-export DISPLAY=:0
-```
-
----
-
-## 🎮 Esegui Pong giocabile da utente con logging automatico
-
-Salva questo script come `play_pong_and_log.py`:
-
-```python
 import gymnasium as gym
 import ale_py
 import pandas as pd
@@ -85,7 +32,7 @@ class PongWindow:
 
         self.root.bind("<KeyPress>", self.on_key_down)
         self.root.bind("<KeyRelease>", self.on_key_up)
-        self.root.protocol("WM_DELETE_WINDOW", self.on_close)
+        self.root.protocol("WM_DELETE_WINDOW", self.on_close)  # <-- AGGIUNTO
 
         self.root.after(0, self.game_loop)
         self.root.mainloop()
@@ -140,49 +87,3 @@ class PongWindow:
 
 PongWindow(obs)
 env.close()
-```
-
-### **Comandi:**
-
-* Premi **W** per muovere la racchetta SU
-* Premi **S** per muovere la racchetta GIÙ
-* Rilasciando i tasti la racchetta sta ferma
-* Chiudi la finestra per terminare e salvare dati e GIF
-
----
-
-## 📈 Output attesi
-
-* **pong\_log.csv** – contiene step, azioni, reward, score (pronto per analisi o training)
-* **pong\_run.gif** – GIF animata della partita
-
----
-
-## ❓ FAQ & Problemi comuni
-
-* **Schermo nero nella finestra:**
-  Usa `render_mode="rgb_array"` e visualizza/salva i frame (come nello script sopra).
-  Su WSL, il rendering X11 può non funzionare perfettamente.
-
-* **AutoROM non trova le ROM:**
-  Assicurati che siano nella cartella `~/.ale/roms/`. Puoi copiare manualmente con:
-
-  ```bash
-  mkdir -p ~/.ale/roms/
-  cp /percorso/ROM/*.bin ~/.ale/roms/
-  ```
-
-* **ImportError: No module named ...**
-  Verifica che il venv sia attivo e le dipendenze installate.
-
----
-
-## 💡 Prossimi step
-
-* Personalizza la policy dell’agente per fare AI!
-* Usa altri ambienti Atari (Breakout, Donkey Kong, ecc.)
-* Analizza i dati per fare prediction e data science!
-
----
-
-A cura di Mattia Bortolaso, Emanuele Girardello, Jiashuo Cheng e Francesco Malfer
