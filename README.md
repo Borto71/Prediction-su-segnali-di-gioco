@@ -177,12 +177,4 @@ env.close()
 
 ---
 
-## 💡 Prossimi step
-
-* Personalizza la policy dell’agente per fare AI!
-* Usa altri ambienti Atari (Breakout, Donkey Kong, ecc.)
-* Analizza i dati per fare prediction e data science!
-
----
-
 A cura di Mattia Bortolaso, Emanuele Girardello, Jiashuo Cheng e Francesco Malfer
