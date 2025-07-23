@@ -1,3 +1,5 @@
+import os
+import time
 import gymnasium as gym
 import ale_py
 import pandas as pd
@@ -10,12 +12,20 @@ ACTION_MEANING = {0: "NOOP", 2: "UP", 3: "DOWN"}
 KEY_ACTIONS = {"w": 2, "s": 3}  # w = up, s = down
 
 gym.register_envs(ale_py)
-env = gym.make('ALE/Pong-v5', render_mode="rgb_array")
+env = gym.make('ALE/Pong-v5', render_mode="rgb_array", mode=1)
 obs, info = env.reset()
 done = False
 
 data = []
 frames = []
+
+today = time.strftime("%Y%m%d")
+DATA_DIR = f"game_data_{today}"
+os.makedirs(DATA_DIR, exist_ok=True)
+
+csv_path = os.path.join(DATA_DIR, 'pong_log.csv')
+gif_path = os.path.join(DATA_DIR, 'pong_run.gif')
+npy_path = os.path.join(DATA_DIR, 'pong_obs.npy')
 
 class PongWindow:
     def __init__(self, obs):
@@ -32,7 +42,6 @@ class PongWindow:
         self.frame_skip = 2
         self.frame_counter = 0
 
-        # Score separato per i due player
         self.score_left = 0
         self.score_right = 0
 
@@ -71,12 +80,10 @@ class PongWindow:
                 self.label.configure(image=self.img)
                 self.label.image = self.img
 
-                # Score per player
                 if reward == -1:
                     self.score_left += 1
                 elif reward == 1:
                     self.score_right += 1
-                # reward 0: nessun punto
 
                 data.append({
                     'step': self.step,
@@ -96,7 +103,7 @@ class PongWindow:
                 self.step += 1
                 self.frame_counter = 0
 
-            self.root.after(40, self.game_loop)  # ~25 fps
+            self.root.after(40, self.game_loop)
         else:
             print(
                 f"Game Over! Final score: Left={self.score_left} | Right={self.score_right}"
@@ -106,10 +113,12 @@ class PongWindow:
 
     def save_results(self):
         df = pd.DataFrame(data)
-        df.to_csv('pong_log.csv', index=False)
-        print("Dati salvati in pong_log.csv!")
-        imageio.mimsave('pong_run.gif', frames, duration=0.04)
-        print("GIF salvata come pong_run.gif!")
+        df.to_csv(csv_path, index=False)
+        print(f"Dati salvati in {csv_path}!")
+        imageio.mimsave(gif_path, frames, duration=0.04)
+        print(f"GIF salvata come {gif_path}!")
+        np.save(npy_path, np.array(frames))
+        print(f"Frames salvati in {npy_path}!")
 
 PongWindow(obs)
 env.close()
