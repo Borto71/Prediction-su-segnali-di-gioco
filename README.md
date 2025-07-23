@@ -1,180 +1,142 @@
-# 🏓 Pong Atari - Quickstart Guide
+# 🏓 Pong Atari - Guida Passo Passo
 
-Questa guida ti permette di **installare**, **giocare manualmente**, e **salvare dati** da Pong Atari con Gymnasium e ALE: al termine di ogni partita verranno generati sia un file CSV con i dati che una GIF della partita.
-Funziona sia su **Ubuntu** che su **WSL (Windows Subsystem for Linux)**.
-
----
-
-## 📦 Requisiti
-
-* Python 3.8+ (consigliato Python 3.10 o superiore)
-* pip
-* (Per WSL) Server X11 su Windows, es: [VcXsrv](https://sourceforge.net/projects/vcxsrv/)
-* AutoROM per scaricare le ROM Atari
+Questa guida ti permette di **giocare a Pong** con la tastiera, vedere la partita, e salvare **automaticamente i dati** (CSV) e la GIF della partita.
+*Non serve nessuna grafica avanzata: funziona su Windows, Ubuntu e WSL2 (vedi casi speciali sotto).*
 
 ---
 
-## 🚀 Setup passo-passo
+## 1. Requisiti di base
 
-### 1. Crea e attiva un ambiente virtuale
+* **Python** (consigliato 3.10 o 3.12)
+
+  * Se non ce l’hai, scaricalo da [python.org](https://www.python.org/downloads/) o con il tuo gestore pacchetti (`sudo apt install python3 python3-pip` su Ubuntu)
+* **pip** (gestore pacchetti Python)
+* Un terminale (Command Prompt, PowerShell, Terminale Ubuntu, ecc.)
+
+---
+
+## 2. Installa Python (se non ce l’hai già)
+
+### Su **Windows**
+
+Scarica da [https://www.python.org/downloads/](https://www.python.org/downloads/)
+Durante l’installazione, **spunta la casella “Add Python to PATH”**!
+
+### Su **Ubuntu / WSL2**
+
+```bash
+sudo apt update
+sudo apt install python3 python3-pip python3-venv
+```
+
+---
+
+## 3. Crea e attiva un ambiente virtuale (consigliato)
+
+Apri il terminale nella cartella dove hai `play_pong.py`:
 
 ```bash
 python3 -m venv venv
+# Su Windows:
+venv\Scripts\activate
+# Su Ubuntu/Mac/WSL:
 source venv/bin/activate
 ```
 
-### 2. Installa le dipendenze principali
+---
+
+## 4. Installa le librerie necessarie
+
+Assicurati che l’ambiente virtuale sia attivo (vedi `(venv)` all’inizio della riga).
 
 ```bash
 pip install gymnasium[atari,accept-rom-license]
 pip install ale-py matplotlib pandas imageio pillow
 ```
 
-### 3. Scarica le ROM Atari
+---
+
+## 5. Scarica le ROM di Atari
+
+**Obbligatorio!**
 
 ```bash
+pip install AutoROM
 AutoROM --accept-license
 ```
 
-### 4. (Solo per WSL) Avvia il server X11 su Windows
-
-Esempio: avvia **VcXsrv** su Windows, poi in WSL esegui:
+Se `AutoROM` non viene trovato, prova:
 
 ```bash
-export DISPLAY=:0
+python -m AutoROM --accept-license
 ```
 
 ---
 
-## 🎮 Esegui Pong giocabile da utente con logging automatico
+## 6. Avvia il gioco
 
-Salva questo script come `play_pong_and_log.py`:
+Nella cartella dove si trova `play_pong.py`:
 
-```python
-import gymnasium as gym
-import ale_py
-import pandas as pd
-import imageio
-import numpy as np
-import tkinter as tk
-from PIL import Image, ImageTk
-
-ACTION_MEANING = {0: "NOOP", 2: "UP", 3: "DOWN"}
-KEY_ACTIONS = {"w": 2, "s": 3}  # w = up, s = down
-
-gym.register_envs(ale_py)
-env = gym.make('ALE/Pong-v5', render_mode="rgb_array")
-obs, info = env.reset()
-done = False
-score = 0
-
-data = []
-frames = []
-
-class PongWindow:
-    def __init__(self, obs):
-        self.root = tk.Tk()
-        self.root.title("Pong Atari - Gioca tu!")
-        self.img = self.obs_to_photoimage(obs)
-        self.label = tk.Label(self.root, image=self.img)
-        self.label.pack()
-        self.obs = obs
-        self.action = 0
-        self.done = False
-        self.step = 0
-
-        self.root.bind("<KeyPress>", self.on_key_down)
-        self.root.bind("<KeyRelease>", self.on_key_up)
-        self.root.protocol("WM_DELETE_WINDOW", self.on_close)
-
-        self.root.after(0, self.game_loop)
-        self.root.mainloop()
-
-    def obs_to_photoimage(self, obs):
-        image = Image.fromarray(obs)
-        image = image.resize((obs.shape[1]*2, obs.shape[0]*2))
-        return ImageTk.PhotoImage(image)
-
-    def on_key_down(self, event):
-        key = event.keysym.lower()
-        if key in KEY_ACTIONS:
-            self.action = KEY_ACTIONS[key]
-
-    def on_key_up(self, event):
-        self.action = 0  # NOOP quando non premi
-
-    def on_close(self):
-        self.save_results()
-        self.root.destroy()
-
-    def game_loop(self):
-        global env, done, score, data, frames
-        if not self.done:
-            obs, reward, terminated, truncated, info = env.step(self.action)
-            self.obs = obs
-            self.img = self.obs_to_photoimage(obs)
-            self.label.configure(image=self.img)
-            self.label.image = self.img
-            score = info.get('score', score)
-
-            # Logging dati e frame per GIF
-            data.append({'step': self.step, 'action': self.action, 'reward': reward, 'score': score})
-            frames.append(obs)
-
-            print(f"Step {self.step} | Action: {self.action} | Reward: {reward} | Score: {score}")
-
-            self.done = terminated or truncated
-            self.step += 1
-            self.root.after(40, self.game_loop)  # ~25 fps
-        else:
-            print("Game Over! Score:", score)
-            self.save_results()
-            self.root.destroy()
-
-    def save_results(self):
-        df = pd.DataFrame(data)
-        df.to_csv('pong_log.csv', index=False)
-        print("Dati salvati in pong_log.csv!")
-        imageio.mimsave('pong_run.gif', frames, duration=0.04)
-        print("GIF salvata come pong_run.gif!")
-
-PongWindow(obs)
-env.close()
+```bash
+python play_pong.py
 ```
 
-### **Comandi:**
+---
 
-* Premi **W** per muovere la racchetta SU
-* Premi **S** per muovere la racchetta GIÙ
-* Rilasciando i tasti la racchetta sta ferma
-* Chiudi la finestra per terminare e salvare dati e GIF
+## 7. Comandi di gioco
+
+* Premi **W** = muovi la racchetta SU
+* Premi **S** = muovi la racchetta GIÙ
+* Nessun tasto = racchetta ferma
+* **Chiudi la finestra** per terminare la partita, salvare il file CSV e la GIF
 
 ---
 
-## 📈 Output attesi
+## 8. Output
 
-* **pong\_log.csv** – contiene step, azioni, reward, score (pronto per analisi o training)
-* **pong\_run.gif** – GIF animata della partita
+* **pong\_log.csv** → contiene tutti i dati della partita (step, azioni, reward, score)
+* **pong\_run.gif** → animazione della partita che hai giocato
 
----
-
-## ❓ FAQ & Problemi comuni
-
-* **Schermo nero nella finestra:**
-  Usa `render_mode="rgb_array"` e visualizza/salva i frame (come nello script sopra).
-  Su WSL, il rendering X11 può non funzionare perfettamente.
-
-* **AutoROM non trova le ROM:**
-  Assicurati che siano nella cartella `~/.ale/roms/`. Puoi copiare manualmente con:
-
-  ```bash
-  mkdir -p ~/.ale/roms/
-  cp /percorso/ROM/*.bin ~/.ale/roms/
-  ```
-
-* **ImportError: No module named ...**
-  Verifica che il venv sia attivo e le dipendenze installate.
+Entrambi i file sono creati nella stessa cartella di `play_pong.py`.
 
 ---
 
-A cura di Mattia Bortolaso, Emanuele Girardello, Jiashuo Cheng e Francesco Malfer
+## 9. Problemi frequenti e soluzioni
+
+**Errore: `ModuleNotFoundError: ...`**
+→ Non hai installato tutte le librerie. Ricontrolla di aver attivato il venv e lanciato tutti i `pip install` sopra.
+
+**Errore: `AutoROM` non viene trovato**
+→ Installa con `pip install AutoROM`, oppure usa `python -m AutoROM --accept-license`
+
+**Il gioco non si avvia / Schermata nera**
+
+* Su alcune versioni WSL o Linux può essere necessario avviare un server X11/GUI (es: VcXsrv su Windows), ma la versione Tkinter di solito funziona **anche senza grafica avanzata**.
+* Se hai problemi di visualizzazione, assicurati che sia tutto aggiornato (`pip install --upgrade pip` e aggiorna le librerie).
+
+**Errore: ROM non trovata**
+→ Rilancia `AutoROM --accept-license` dopo aver installato `ale-py`.
+
+---
+
+## 10. FAQ
+
+* **Posso usare Python senza venv?**
+  Sì, ma è sconsigliato: rischi conflitti tra pacchetti.
+
+* **Posso cambiare i tasti di gioco?**
+  Cambia il dizionario `KEY_ACTIONS` in `play_pong.py`.
+
+* **Come vedo i dati?**
+  Apri `pong_log.csv` con Excel, LibreOffice o pandas.
+
+---
+
+**Per qualsiasi problema:**
+
+1. Ricontrolla questa guida.
+2. Se l’errore non è qui, copia l’errore e chiedi a chi ha condiviso il progetto.
+
+---
+
+*A cura di Mattia Bortolaso, Emanuele Girardello, Jiashuo Cheng e Francesco Malfer.
