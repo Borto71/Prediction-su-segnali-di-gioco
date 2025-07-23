@@ -13,7 +13,6 @@ gym.register_envs(ale_py)
 env = gym.make('ALE/Pong-v5', render_mode="rgb_array")
 obs, info = env.reset()
 done = False
-score = 0
 
 data = []
 frames = []
@@ -30,9 +29,16 @@ class PongWindow:
         self.done = False
         self.step = 0
 
+        self.frame_skip = 2
+        self.frame_counter = 0
+
+        # Score separato per i due player
+        self.score_left = 0
+        self.score_right = 0
+
         self.root.bind("<KeyPress>", self.on_key_down)
         self.root.bind("<KeyRelease>", self.on_key_up)
-        self.root.protocol("WM_DELETE_WINDOW", self.on_close)  # <-- AGGIUNTO
+        self.root.protocol("WM_DELETE_WINDOW", self.on_close)
 
         self.root.after(0, self.game_loop)
         self.root.mainloop()
@@ -55,26 +61,46 @@ class PongWindow:
         self.root.destroy()
 
     def game_loop(self):
-        global env, done, score, data, frames
+        global env, done, data, frames
         if not self.done:
-            obs, reward, terminated, truncated, info = env.step(self.action)
-            self.obs = obs
-            self.img = self.obs_to_photoimage(obs)
-            self.label.configure(image=self.img)
-            self.label.image = self.img
-            score = info.get('score', score)
+            self.frame_counter += 1
+            if self.frame_counter >= self.frame_skip:
+                obs, reward, terminated, truncated, info = env.step(self.action)
+                self.obs = obs
+                self.img = self.obs_to_photoimage(obs)
+                self.label.configure(image=self.img)
+                self.label.image = self.img
 
-            # Logging dati e frame per GIF
-            data.append({'step': self.step, 'action': self.action, 'reward': reward, 'score': score})
-            frames.append(obs)
+                # Score per player
+                if reward == -1:
+                    self.score_left += 1
+                elif reward == 1:
+                    self.score_right += 1
+                # reward 0: nessun punto
 
-            print(f"Step {self.step} | Action: {self.action} | Reward: {reward} | Score: {score}")
+                data.append({
+                    'step': self.step,
+                    'action': self.action,
+                    'reward': reward,
+                    'score_left': self.score_left,
+                    'score_right': self.score_right
+                })
+                frames.append(obs)
 
-            self.done = terminated or truncated
-            self.step += 1
+                print(
+                    f"Step {self.step} | Action: {self.action} | Reward: {reward} | "
+                    f"Score left: {self.score_left} | Score right: {self.score_right}"
+                )
+
+                self.done = terminated or truncated
+                self.step += 1
+                self.frame_counter = 0
+
             self.root.after(40, self.game_loop)  # ~25 fps
         else:
-            print("Game Over! Score:", score)
+            print(
+                f"Game Over! Final score: Left={self.score_left} | Right={self.score_right}"
+            )
             self.save_results()
             self.root.destroy()
 
