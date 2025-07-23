@@ -1,107 +1,142 @@
-# 📊 Dataset Ricco per Pong Atari (RLDS - HuggingFace) — Guida al Download e Conversione
+# 🏓 Pong Atari - Guida Passo Passo
 
-Questa guida spiega **come ottenere un grande dataset di partite Pong Atari** da HuggingFace (dati usati in AI/RL), e come **convertirlo in CSV**.
-
-**Niente grafica necessaria, tutto da terminale!**
+Questa guida ti permette di **giocare a Pong** con la tastiera, vedere la partita, e salvare **automaticamente i dati** (CSV) e la GIF della partita.
+*Non serve nessuna grafica avanzata: funziona su Windows, Ubuntu e WSL2 (vedi casi speciali sotto).*
 
 ---
 
-## 📦 Cosa ti serve
+## 1. Requisiti di base
 
-* **Python 3.8+**
-* **pip**
-* I pacchetti Python:
+* **Python** (consigliato 3.10 o 3.12)
 
-  * `datasets` (per scaricare da HuggingFace)
-  * `pandas` (per gestire i dati e salvare in CSV)
+  * Se non ce l’hai, scaricalo da [python.org](https://www.python.org/downloads/) o con il tuo gestore pacchetti (`sudo apt install python3 python3-pip` su Ubuntu)
+* **pip** (gestore pacchetti Python)
+* Un terminale (Command Prompt, PowerShell, Terminale Ubuntu, ecc.)
 
-Installa tutto con:
+---
+
+## 2. Installa Python (se non ce l’hai già)
+
+### Su **Windows**
+
+Scarica da [https://www.python.org/downloads/](https://www.python.org/downloads/)
+Durante l’installazione, **spunta la casella “Add Python to PATH”**!
+
+### Su **Ubuntu / WSL2**
 
 ```bash
-pip install datasets pandas
+sudo apt update
+sudo apt install python3 python3-pip python3-venv
 ```
 
 ---
 
-## 🚀 Come ottenere il dataset Pong
+## 3. Crea e attiva un ambiente virtuale (consigliato)
 
-Il dataset **RLDS Atari** di HuggingFace contiene moltissime partite di vari giochi Atari, incluso Pong. Non serve installare grafica, X11 o AutoROM!
+Apri il terminale nella cartella dove hai `play_pong.py`:
 
-### 1. Scarica il dataset con Python
-
-Copia questo codice in un file Python, ad esempio `extract_pong_rlds.py`:
-
-```python
-from datasets import load_dataset
-import pandas as pd
-
-# Scarica il dataset RLDS Atari (è grande, servono almeno 5-10GB liberi!)
-dataset = load_dataset("rlds/atari", split="train")
-
-# Filtra solo i dati di Pong (ci mette qualche minuto)
-pong_data = dataset.filter(lambda ex: ex['game'] == "pong")
-print(f"Numero di step Pong trovati: {len(pong_data)}")
-
-# Se vuoi solo un sottoinsieme per test (es: 100.000 step):
-pong_data = pong_data.select(range(0, min(100000, len(pong_data))))
-
-# Esporta in CSV solo le colonne principali (aggiungi/rimuovi a piacere)
-df = pd.DataFrame({
-    "observation": pong_data['observation'],    # Attenzione: è un array grande!
-    "action": pong_data['action'],
-    "reward": pong_data['reward'],
-    "discount": pong_data['discount'],
-    "step_type": pong_data['step_type'],
-    "is_first": pong_data['is_first'],
-    "is_last": pong_data['is_last'],
-    "is_terminal": pong_data['is_terminal'],
-})
-df.to_csv("pong_rlds_sample.csv", index=False)
-print("Salvato pong_rlds_sample.csv con", len(df), "righe")
+```bash
+python3 -m venv venv
+# Su Windows:
+venv\Scripts\activate
+# Su Ubuntu/Mac/WSL:
+source venv/bin/activate
 ```
 
 ---
 
-## ℹ️ Note utili
+## 4. Installa le librerie necessarie
 
-* **AutoROM NON serve** per questa operazione!
-* **Nessuna grafica** richiesta: tutto via terminale/script.
-* Il campo `"observation"` contiene i pixel del gioco come array: può rendere il CSV molto pesante.
+Assicurati che l’ambiente virtuale sia attivo (vedi `(venv)` all’inizio della riga).
 
-  * Se vuoi solo azioni, reward, step, togli "observation" dalla lista.
-* Puoi modificare il numero di righe esportate cambiando `min(100000, len(pong_data))`.
-* Il dataset completo contiene **milioni di step**: valuta le risorse del tuo PC!
-
----
-
-## 📈 Output
-
-* **pong\_rlds\_sample.csv**: dati completi e ricchi, usabili in Excel, pandas, Jupyter, ML, RL.
+```bash
+pip install gymnasium[atari,accept-rom-license]
+pip install ale-py matplotlib pandas imageio pillow
+```
 
 ---
 
-## ⚡ Tips e problemi frequenti
+## 5. Scarica le ROM di Atari
 
-* **RAM o spazio insufficiente:** riduci il numero di step esportati
-* **"ImportError"**: Ricorda di installare i pacchetti e usare la stessa versione di Python
-* **Analisi dei dati**: stampa sempre `pong_data.features` o `df.head()` per vedere la struttura
+**Obbligatorio!**
 
----
+```bash
+pip install AutoROM
+AutoROM --accept-license
+```
 
-## 💡 A cosa serve
+Se `AutoROM` non viene trovato, prova:
 
-* Analisi di policy RL, prediction, benchmark, grafici reward/azioni
-* Addestramento modelli, autoencoder, reti neurali
-* Visualizzazione dati di gameplay reale e agenti RL
-
----
-
-Dataset originale:
-[https://huggingface.co/datasets/rlds/atari](https://huggingface.co/datasets/rlds/atari)
-
-Documentazione RLDS:
-[https://github.com/google-research/rlds](https://github.com/google-research/rlds)
+```bash
+python -m AutoROM --accept-license
+```
 
 ---
 
-*A cura di Mattia Bortolaso, Emanuele Girardello, Jiashuo Cheng e Francesco Malfer
+## 6. Avvia il gioco
+
+Nella cartella dove si trova `play_pong.py`:
+
+```bash
+python play_pong.py
+```
+
+---
+
+## 7. Comandi di gioco
+
+* Premi **W** = muovi la racchetta SU
+* Premi **S** = muovi la racchetta GIÙ
+* Nessun tasto = racchetta ferma
+* **Chiudi la finestra** per terminare la partita, salvare il file CSV e la GIF
+
+---
+
+## 8. Output
+
+* **pong\_log.csv** → contiene tutti i dati della partita (step, azioni, reward, score)
+* **pong\_run.gif** → animazione della partita che hai giocato
+
+Entrambi i file sono creati nella stessa cartella di `play_pong.py`.
+
+---
+
+## 9. Problemi frequenti e soluzioni
+
+**Errore: `ModuleNotFoundError: ...`**
+→ Non hai installato tutte le librerie. Ricontrolla di aver attivato il venv e lanciato tutti i `pip install` sopra.
+
+**Errore: `AutoROM` non viene trovato**
+→ Installa con `pip install AutoROM`, oppure usa `python -m AutoROM --accept-license`
+
+**Il gioco non si avvia / Schermata nera**
+
+* Su alcune versioni WSL o Linux può essere necessario avviare un server X11/GUI (es: VcXsrv su Windows), ma la versione Tkinter di solito funziona **anche senza grafica avanzata**.
+* Se hai problemi di visualizzazione, assicurati che sia tutto aggiornato (`pip install --upgrade pip` e aggiorna le librerie).
+
+**Errore: ROM non trovata**
+→ Rilancia `AutoROM --accept-license` dopo aver installato `ale-py`.
+
+---
+
+## 10. FAQ
+
+* **Posso usare Python senza venv?**
+  Sì, ma è sconsigliato: rischi conflitti tra pacchetti.
+
+* **Posso cambiare i tasti di gioco?**
+  Cambia il dizionario `KEY_ACTIONS` in `play_pong.py`.
+
+* **Come vedo i dati?**
+  Apri `pong_log.csv` con Excel, LibreOffice o pandas.
+
+---
+
+**Per qualsiasi problema:**
+
+1. Ricontrolla questa guida.
+2. Se l’errore non è qui, copia l’errore e chiedi a chi ha condiviso il progetto.
+
+---
+
+*A cura di Mattia Bortolaso, Emanuele Girardello, Jiashuo Cheng e Francesco Malfer.
