@@ -1,180 +1,107 @@
-# 🏓 Pong Atari - Quickstart Guide
+# 📊 Dataset Ricco per Pong Atari (RLDS - HuggingFace) — Guida al Download e Conversione
 
-Questa guida ti permette di **installare**, **giocare manualmente**, e **salvare dati** da Pong Atari con Gymnasium e ALE: al termine di ogni partita verranno generati sia un file CSV con i dati che una GIF della partita.
-Funziona sia su **Ubuntu** che su **WSL (Windows Subsystem for Linux)**.
+Questa guida spiega **come ottenere un grande dataset di partite Pong Atari** da HuggingFace (dati usati in AI/RL), e come **convertirlo in CSV**.
 
----
-
-## 📦 Requisiti
-
-* Python 3.8+ (consigliato Python 3.10 o superiore)
-* pip
-* (Per WSL) Server X11 su Windows, es: [VcXsrv](https://sourceforge.net/projects/vcxsrv/)
-* AutoROM per scaricare le ROM Atari
+**Niente grafica necessaria, tutto da terminale!**
 
 ---
 
-## 🚀 Setup passo-passo
+## 📦 Cosa ti serve
 
-### 1. Crea e attiva un ambiente virtuale
+* **Python 3.8+**
+* **pip**
+* I pacchetti Python:
 
-```bash
-python3 -m venv venv
-source venv/bin/activate
-```
+  * `datasets` (per scaricare da HuggingFace)
+  * `pandas` (per gestire i dati e salvare in CSV)
 
-### 2. Installa le dipendenze principali
-
-```bash
-pip install gymnasium[atari,accept-rom-license]
-pip install ale-py matplotlib pandas imageio pillow
-```
-
-### 3. Scarica le ROM Atari
+Installa tutto con:
 
 ```bash
-AutoROM --accept-license
-```
-
-### 4. (Solo per WSL) Avvia il server X11 su Windows
-
-Esempio: avvia **VcXsrv** su Windows, poi in WSL esegui:
-
-```bash
-export DISPLAY=:0
+pip install datasets pandas
 ```
 
 ---
 
-## 🎮 Esegui Pong giocabile da utente con logging automatico
+## 🚀 Come ottenere il dataset Pong
 
-Salva questo script come `play_pong_and_log.py`:
+Il dataset **RLDS Atari** di HuggingFace contiene moltissime partite di vari giochi Atari, incluso Pong. Non serve installare grafica, X11 o AutoROM!
+
+### 1. Scarica il dataset con Python
+
+Copia questo codice in un file Python, ad esempio `extract_pong_rlds.py`:
 
 ```python
-import gymnasium as gym
-import ale_py
+from datasets import load_dataset
 import pandas as pd
-import imageio
-import numpy as np
-import tkinter as tk
-from PIL import Image, ImageTk
 
-ACTION_MEANING = {0: "NOOP", 2: "UP", 3: "DOWN"}
-KEY_ACTIONS = {"w": 2, "s": 3}  # w = up, s = down
+# Scarica il dataset RLDS Atari (è grande, servono almeno 5-10GB liberi!)
+dataset = load_dataset("rlds/atari", split="train")
 
-gym.register_envs(ale_py)
-env = gym.make('ALE/Pong-v5', render_mode="rgb_array")
-obs, info = env.reset()
-done = False
-score = 0
+# Filtra solo i dati di Pong (ci mette qualche minuto)
+pong_data = dataset.filter(lambda ex: ex['game'] == "pong")
+print(f"Numero di step Pong trovati: {len(pong_data)}")
 
-data = []
-frames = []
+# Se vuoi solo un sottoinsieme per test (es: 100.000 step):
+pong_data = pong_data.select(range(0, min(100000, len(pong_data))))
 
-class PongWindow:
-    def __init__(self, obs):
-        self.root = tk.Tk()
-        self.root.title("Pong Atari - Gioca tu!")
-        self.img = self.obs_to_photoimage(obs)
-        self.label = tk.Label(self.root, image=self.img)
-        self.label.pack()
-        self.obs = obs
-        self.action = 0
-        self.done = False
-        self.step = 0
-
-        self.root.bind("<KeyPress>", self.on_key_down)
-        self.root.bind("<KeyRelease>", self.on_key_up)
-        self.root.protocol("WM_DELETE_WINDOW", self.on_close)
-
-        self.root.after(0, self.game_loop)
-        self.root.mainloop()
-
-    def obs_to_photoimage(self, obs):
-        image = Image.fromarray(obs)
-        image = image.resize((obs.shape[1]*2, obs.shape[0]*2))
-        return ImageTk.PhotoImage(image)
-
-    def on_key_down(self, event):
-        key = event.keysym.lower()
-        if key in KEY_ACTIONS:
-            self.action = KEY_ACTIONS[key]
-
-    def on_key_up(self, event):
-        self.action = 0  # NOOP quando non premi
-
-    def on_close(self):
-        self.save_results()
-        self.root.destroy()
-
-    def game_loop(self):
-        global env, done, score, data, frames
-        if not self.done:
-            obs, reward, terminated, truncated, info = env.step(self.action)
-            self.obs = obs
-            self.img = self.obs_to_photoimage(obs)
-            self.label.configure(image=self.img)
-            self.label.image = self.img
-            score = info.get('score', score)
-
-            # Logging dati e frame per GIF
-            data.append({'step': self.step, 'action': self.action, 'reward': reward, 'score': score})
-            frames.append(obs)
-
-            print(f"Step {self.step} | Action: {self.action} | Reward: {reward} | Score: {score}")
-
-            self.done = terminated or truncated
-            self.step += 1
-            self.root.after(40, self.game_loop)  # ~25 fps
-        else:
-            print("Game Over! Score:", score)
-            self.save_results()
-            self.root.destroy()
-
-    def save_results(self):
-        df = pd.DataFrame(data)
-        df.to_csv('pong_log.csv', index=False)
-        print("Dati salvati in pong_log.csv!")
-        imageio.mimsave('pong_run.gif', frames, duration=0.04)
-        print("GIF salvata come pong_run.gif!")
-
-PongWindow(obs)
-env.close()
+# Esporta in CSV solo le colonne principali (aggiungi/rimuovi a piacere)
+df = pd.DataFrame({
+    "observation": pong_data['observation'],    # Attenzione: è un array grande!
+    "action": pong_data['action'],
+    "reward": pong_data['reward'],
+    "discount": pong_data['discount'],
+    "step_type": pong_data['step_type'],
+    "is_first": pong_data['is_first'],
+    "is_last": pong_data['is_last'],
+    "is_terminal": pong_data['is_terminal'],
+})
+df.to_csv("pong_rlds_sample.csv", index=False)
+print("Salvato pong_rlds_sample.csv con", len(df), "righe")
 ```
 
-### **Comandi:**
+---
 
-* Premi **W** per muovere la racchetta SU
-* Premi **S** per muovere la racchetta GIÙ
-* Rilasciando i tasti la racchetta sta ferma
-* Chiudi la finestra per terminare e salvare dati e GIF
+## ℹ️ Note utili
+
+* **AutoROM NON serve** per questa operazione!
+* **Nessuna grafica** richiesta: tutto via terminale/script.
+* Il campo `"observation"` contiene i pixel del gioco come array: può rendere il CSV molto pesante.
+
+  * Se vuoi solo azioni, reward, step, togli "observation" dalla lista.
+* Puoi modificare il numero di righe esportate cambiando `min(100000, len(pong_data))`.
+* Il dataset completo contiene **milioni di step**: valuta le risorse del tuo PC!
 
 ---
 
-## 📈 Output attesi
+## 📈 Output
 
-* **pong\_log.csv** – contiene step, azioni, reward, score (pronto per analisi o training)
-* **pong\_run.gif** – GIF animata della partita
-
----
-
-## ❓ FAQ & Problemi comuni
-
-* **Schermo nero nella finestra:**
-  Usa `render_mode="rgb_array"` e visualizza/salva i frame (come nello script sopra).
-  Su WSL, il rendering X11 può non funzionare perfettamente.
-
-* **AutoROM non trova le ROM:**
-  Assicurati che siano nella cartella `~/.ale/roms/`. Puoi copiare manualmente con:
-
-  ```bash
-  mkdir -p ~/.ale/roms/
-  cp /percorso/ROM/*.bin ~/.ale/roms/
-  ```
-
-* **ImportError: No module named ...**
-  Verifica che il venv sia attivo e le dipendenze installate.
+* **pong\_rlds\_sample.csv**: dati completi e ricchi, usabili in Excel, pandas, Jupyter, ML, RL.
 
 ---
 
-A cura di Mattia Bortolaso, Emanuele Girardello, Jiashuo Cheng e Francesco Malfer
+## ⚡ Tips e problemi frequenti
+
+* **RAM o spazio insufficiente:** riduci il numero di step esportati
+* **"ImportError"**: Ricorda di installare i pacchetti e usare la stessa versione di Python
+* **Analisi dei dati**: stampa sempre `pong_data.features` o `df.head()` per vedere la struttura
+
+---
+
+## 💡 A cosa serve
+
+* Analisi di policy RL, prediction, benchmark, grafici reward/azioni
+* Addestramento modelli, autoencoder, reti neurali
+* Visualizzazione dati di gameplay reale e agenti RL
+
+---
+
+Dataset originale:
+[https://huggingface.co/datasets/rlds/atari](https://huggingface.co/datasets/rlds/atari)
+
+Documentazione RLDS:
+[https://github.com/google-research/rlds](https://github.com/google-research/rlds)
+
+---
+
+*A cura di Mattia Bortolaso, Emanuele Girardello, Jiashuo Cheng e Francesco Malfer
