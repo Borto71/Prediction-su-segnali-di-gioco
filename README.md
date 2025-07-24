@@ -132,6 +132,63 @@ Entrambi i file sono creati nella stessa cartella di `play_pong.py`.
 
 ---
 
+11. Estrazione automatica della posizione di pallina e racchette
+
+Dopo aver registrato una partita, puoi estrarre automaticamente le posizioni della pallina e delle racchette frame per frame, e salvarle nel file CSV finale pong_data_features.csv.
+
+a. Estrazione della posizione della pallina
+
+Per estrarre la posizione X e Y della pallina in ogni frame, lancia lo script:
+
+python ball_extraction.py
+
+Questo script:
+
+Analizza ogni frame e trova la pallina bianca
+
+Aggiunge al CSV le colonne ball_x e ball_y
+
+Visualizza ogni frame mostrando la posizione trovata con un punto rosso sulla pallina
+
+Esempio di risultato visualizzato:
+
+
+
+b. Estrazione della posizione delle racchette
+
+Per tracciare la racchetta del player (destra, verde):
+
+python right_paddle_extraction.py
+
+Per tracciare la racchetta dell’opponent (sinistra, arancione):
+
+python left_paddle_extraction.py
+
+Questi script:
+
+Analizzano la zona dei bordi dove appaiono le racchette
+
+Aggiungono al CSV le colonne right_paddle_y (player) e left_paddle_y (opponent)
+
+Mostrano la posizione stimata come una barra verticale rossa sulla racchetta
+
+Esempio di risultato visualizzato:
+
+
+
+
+⚠️ Nota: Puoi lanciare questi script in qualsiasi ordine!Ciascuno aggiornerà il CSV aggiungendo solo la propria colonna, senza cancellare le altre.Puoi quindi ottenere facilmente un dataset pronto per l’addestramento di modelli di predizione.
+
+File finale
+
+Dopo aver eseguito gli script, il file pong_data_features.csv conterrà:
+
+Dati di gioco originali (step, azioni, reward, punteggio…)
+
+Colonne aggiunte: ball_x, ball_y, right_paddle_y, left_paddle_y
+
+---
+
 **Per qualsiasi problema:**
 
 1. Ricontrolla questa guida.
