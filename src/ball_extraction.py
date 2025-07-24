@@ -55,6 +55,6 @@ plt.show()
 df['ball_x'] = ball_xs
 df['ball_y'] = ball_ys
 
-out_csv = os.path.join(FRAMES_DIR, f"pong_data_features_{game_id}.csv")
+out_csv = os.path.join(DATA_DIR, "pong_data_features.csv")
 df.to_csv(out_csv, index=False)
 print(f"\nFile con posizione pallina salvato in {out_csv}!")
