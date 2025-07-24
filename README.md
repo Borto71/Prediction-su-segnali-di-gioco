@@ -152,9 +152,9 @@ Questo script:
 
 **Esempio di risultato visualizzato:**
 
-<!-- INSERISCI QUI UNO SCREENSHOT del frame con il punto rosso sulla pallina -->
-
-<!-- Esempio: ![Esempio posizione pallina](immagini/frame_pallina.png) -->
+<p align="center">
+  <img src="img/ball_img.png" width="300"/>
+</p>
 
 ---
 
@@ -180,9 +180,9 @@ Questi script:
 
 **Esempio di risultato visualizzato:**
 
-<!-- INSERISCI QUI UNO SCREENSHOT del frame con la barra verticale rossa sulla racchetta -->
-
-<!-- Esempio: ![Esempio posizione racchetta](immagini/frame_racchetta.png) -->
+<p align="center">
+  <img src="img/player_img.png" width="300"/>
+</p>
 
 ---
 
