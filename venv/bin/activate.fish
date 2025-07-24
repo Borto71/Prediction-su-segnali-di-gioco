@@ -33,7 +33,7 @@ end
 # Unset irrelevant variables.
 deactivate nondestructive
 
-set -gx VIRTUAL_ENV '/home/borto/Attention Laboratory/Prediction-su-segnali-di-gioco/venv'
+set -gx VIRTUAL_ENV /home/emagira/Progetti/AttentionLabPong/venv
 
 set -gx _OLD_VIRTUAL_PATH $PATH
 set -gx PATH "$VIRTUAL_ENV/"bin $PATH
