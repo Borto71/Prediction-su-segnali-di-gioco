@@ -8,8 +8,7 @@ Questa guida ti permette di **giocare a Pong** con la tastiera, vedere la partit
 ## 1. Requisiti di base
 
 * **Python** (consigliato 3.10 o 3.12)
-
-  * Se non ce l’hai, scaricalo da [python.org](https://www.python.org/downloads/) o con il tuo gestore pacchetti (`sudo apt install python3 python3-pip` su Ubuntu)
+  Se non ce l’hai, scaricalo da [python.org](https://www.python.org/downloads/) oppure con il tuo gestore pacchetti (`sudo apt install python3 python3-pip` su Ubuntu)
 * **pip** (gestore pacchetti Python)
 * Un terminale (Command Prompt, PowerShell, Terminale Ubuntu, ecc.)
 
@@ -19,7 +18,7 @@ Questa guida ti permette di **giocare a Pong** con la tastiera, vedere la partit
 
 ### Su **Windows**
 
-Scarica da [https://www.python.org/downloads/](https://www.python.org/downloads/)
+Scarica Python da [https://www.python.org/downloads/](https://www.python.org/downloads/)
 Durante l’installazione, **spunta la casella “Add Python to PATH”**!
 
 ### Su **Ubuntu / WSL2**
@@ -37,8 +36,10 @@ Apri il terminale nella cartella dove hai `play_pong.py`:
 
 ```bash
 python3 -m venv venv
+
 # Su Windows:
 venv\Scripts\activate
+
 # Su Ubuntu/Mac/WSL:
 source venv/bin/activate
 ```
@@ -47,7 +48,7 @@ source venv/bin/activate
 
 ## 4. Installa le librerie necessarie
 
-Assicurati che l’ambiente virtuale sia attivo (vedi `(venv)` all’inizio della riga).
+Assicurati che l’ambiente virtuale sia attivo (vedi `(venv)` all’inizio della riga):
 
 ```bash
 pip install gymnasium[atari,accept-rom-license]
@@ -103,97 +104,110 @@ Entrambi i file sono creati nella stessa cartella di `play_pong.py`.
 
 ## 9. Problemi frequenti e soluzioni
 
-**Errore: `ModuleNotFoundError: ...`**
-→ Non hai installato tutte le librerie. Ricontrolla di aver attivato il venv e lanciato tutti i `pip install` sopra.
+* **Errore: `ModuleNotFoundError: ...`**
+  Non hai installato tutte le librerie. Ricontrolla di aver attivato il venv e lanciato tutti i `pip install` sopra.
+* **Errore: `AutoROM` non viene trovato**
+  Installa con `pip install AutoROM`, oppure usa `python -m AutoROM --accept-license`
+* **Il gioco non si avvia / Schermata nera**
 
-**Errore: `AutoROM` non viene trovato**
-→ Installa con `pip install AutoROM`, oppure usa `python -m AutoROM --accept-license`
-
-**Il gioco non si avvia / Schermata nera**
-
-* Su alcune versioni WSL o Linux può essere necessario avviare un server X11/GUI (es: VcXsrv su Windows), ma la versione Tkinter di solito funziona **anche senza grafica avanzata**.
-* Se hai problemi di visualizzazione, assicurati che sia tutto aggiornato (`pip install --upgrade pip` e aggiorna le librerie).
-
-**Errore: ROM non trovata**
-→ Rilancia `AutoROM --accept-license` dopo aver installato `ale-py`.
+  * Su alcune versioni WSL o Linux può essere necessario avviare un server X11/GUI (es: VcXsrv su Windows), ma la versione Tkinter di solito funziona **anche senza grafica avanzata**.
+  * Se hai problemi di visualizzazione, assicurati che sia tutto aggiornato (`pip install --upgrade pip` e aggiorna le librerie).
+* **Errore: ROM non trovata**
+  Rilancia `AutoROM --accept-license` dopo aver installato `ale-py`.
 
 ---
 
 ## 10. FAQ
 
-* **Posso usare Python senza venv?**
-  Sì, ma è sconsigliato: rischi conflitti tra pacchetti.
+**Posso usare Python senza venv?**
+Sì, ma è sconsigliato: rischi conflitti tra pacchetti.
 
-* **Posso cambiare i tasti di gioco?**
-  Cambia il dizionario `KEY_ACTIONS` in `play_pong.py`.
+**Posso cambiare i tasti di gioco?**
+Modifica il dizionario `KEY_ACTIONS` in `play_pong.py`.
 
-* **Come vedo i dati?**
-  Apri `pong_log.csv` con Excel, LibreOffice o pandas.
+**Come vedo i dati?**
+Apri `pong_log.csv` con Excel, LibreOffice o pandas.
 
 ---
 
-11. Estrazione automatica della posizione di pallina e racchette
+## 11. Estrazione automatica della posizione di pallina e racchette
 
-Dopo aver registrato una partita, puoi estrarre automaticamente le posizioni della pallina e delle racchette frame per frame, e salvarle nel file CSV finale pong_data_features.csv.
+Dopo aver registrato una partita, puoi estrarre automaticamente le posizioni della pallina e delle racchette frame per frame, e salvarle nel file finale `pong_data_features.csv`.
 
-a. Estrazione della posizione della pallina
+---
 
-Per estrarre la posizione X e Y della pallina in ogni frame, lancia lo script:
+### a. Estrazione della posizione della pallina
 
+Per estrarre la posizione X e Y della pallina in ogni frame:
+
+```bash
 python ball_extraction.py
+```
 
 Questo script:
 
-Analizza ogni frame e trova la pallina bianca
+* Analizza ogni frame e trova la pallina bianca
+* Aggiunge al CSV le colonne `ball_x` e `ball_y`
+* Visualizza ogni frame mostrando la posizione trovata con un punto rosso sulla pallina
 
-Aggiunge al CSV le colonne ball_x e ball_y
+**Esempio di risultato visualizzato:**
 
-Visualizza ogni frame mostrando la posizione trovata con un punto rosso sulla pallina
+<!-- INSERISCI QUI UNO SCREENSHOT del frame con il punto rosso sulla pallina -->
 
-Esempio di risultato visualizzato:
-
-
-
-b. Estrazione della posizione delle racchette
-
-Per tracciare la racchetta del player (destra, verde):
-
-python right_paddle_extraction.py
-
-Per tracciare la racchetta dell’opponent (sinistra, arancione):
-
-python left_paddle_extraction.py
-
-Questi script:
-
-Analizzano la zona dei bordi dove appaiono le racchette
-
-Aggiungono al CSV le colonne right_paddle_y (player) e left_paddle_y (opponent)
-
-Mostrano la posizione stimata come una barra verticale rossa sulla racchetta
-
-Esempio di risultato visualizzato:
-
-
-
-
-⚠️ Nota: Puoi lanciare questi script in qualsiasi ordine!Ciascuno aggiornerà il CSV aggiungendo solo la propria colonna, senza cancellare le altre.Puoi quindi ottenere facilmente un dataset pronto per l’addestramento di modelli di predizione.
-
-File finale
-
-Dopo aver eseguito gli script, il file pong_data_features.csv conterrà:
-
-Dati di gioco originali (step, azioni, reward, punteggio…)
-
-Colonne aggiunte: ball_x, ball_y, right_paddle_y, left_paddle_y
+<!-- Esempio: ![Esempio posizione pallina](immagini/frame_pallina.png) -->
 
 ---
 
-**Per qualsiasi problema:**
+### b. Estrazione della posizione delle racchette
+
+Per tracciare la racchetta del player (destra, verde):
+
+```bash
+python right_paddle_extraction.py
+```
+
+Per tracciare la racchetta dell’opponent (sinistra, arancione):
+
+```bash
+python left_paddle_extraction.py
+```
+
+Questi script:
+
+* Analizzano la zona dei bordi dove appaiono le racchette
+* Aggiungono al CSV le colonne `right_paddle_y` (player) e `left_paddle_y` (opponent)
+* Mostrano la posizione stimata come una barra verticale rossa sulla racchetta
+
+**Esempio di risultato visualizzato:**
+
+<!-- INSERISCI QUI UNO SCREENSHOT del frame con la barra verticale rossa sulla racchetta -->
+
+<!-- Esempio: ![Esempio posizione racchetta](immagini/frame_racchetta.png) -->
+
+---
+
+> ⚠️ **Nota**: Puoi lanciare questi script in qualsiasi ordine!
+> Ciascuno aggiornerà il CSV aggiungendo solo la propria colonna, senza cancellare le altre.
+> Puoi così ottenere facilmente un dataset pronto per l’addestramento di modelli di predizione.
+
+---
+
+## 12. File finale
+
+Dopo aver eseguito gli script, il file `pong_data_features.csv` conterrà:
+
+* Dati di gioco originali (step, azioni, reward, punteggio…)
+* Colonne aggiunte: `ball_x`, `ball_y`, `right_paddle_y`, `left_paddle_y`
+
+---
+
+## 📧 Supporto
+
+Per qualsiasi problema:
 
 1. Ricontrolla questa guida.
 2. Se l’errore non è qui, copia l’errore e chiedi a chi ha condiviso il progetto.
 
 ---
 
-*A cura di Mattia Bortolaso, Emanuele Girardello, Jiashuo Cheng e Francesco Malfer.
+*A cura di Mattia Bortolaso, Emanuele Girardello, Jiashuo Cheng e Francesco Malfer.*
