@@ -180,13 +180,10 @@ Questi script:
 
 **Esempio di risultato visualizzato:**
 
-<p align="left">
-  <img src="img/player_img.png" width="300"/>
-</p>
+| ![Player](img/player_img.png) | ![Opponent](img/opponent_img.png) |
+|:----------------------------:|:---------------------------------:|
+|           Player             |            Opponent               |
 
-<p align="right">
-  <img src="img/opponent_img.png" width="300"/>
-</p>
 
 ---
 
