@@ -163,13 +163,13 @@ Questo script:
 Per tracciare la racchetta del player (destra, verde):
 
 ```bash
-python right_paddle_extraction.py
+python player_extraction.py
 ```
 
 Per tracciare la racchetta dell’opponent (sinistra, arancione):
 
 ```bash
-python left_paddle_extraction.py
+python player_extraction.py
 ```
 
 Questi script:
