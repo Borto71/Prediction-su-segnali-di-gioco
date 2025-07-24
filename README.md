@@ -169,7 +169,7 @@ python player_extraction.py
 Per tracciare la racchetta dell’opponent (sinistra, arancione):
 
 ```bash
-python player_extraction.py
+python opponent_extraction.py
 ```
 
 Questi script:
@@ -180,8 +180,12 @@ Questi script:
 
 **Esempio di risultato visualizzato:**
 
-<p align="center">
+<p align="left">
   <img src="img/player_img.png" width="300"/>
+</p>
+
+<p align="right">
+  <img src="img/opponent_img.png" width="300"/>
 </p>
 
 ---
