@@ -16,7 +16,7 @@ if os.path.exists(features_path):
 else:
     df = pd.read_csv(os.path.join(DATA_DIR, "pong_log.csv"))
 
-# Limiti campo (modifica se serve)
+# Limiti campo 
 y_min, y_max = 34, 194
 x_min, x_max = 127, 158   # Solo bordo destro
 
