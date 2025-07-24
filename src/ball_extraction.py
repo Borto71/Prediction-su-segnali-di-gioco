@@ -12,7 +12,7 @@ game_id = "20250723"
 frames = np.load(os.path.join(DATA_DIR, f"pong_obs.npy"))
 df = pd.read_csv(os.path.join(DATA_DIR, f"pong_log.csv"))
 
-# --- Limiti del campo di gioco (modifica se necessario) ---
+# --- Limiti del campo di gioco ---
 y_min, y_max = 34, 194   # verticale (in genere Pong classico)
 x_min, x_max = 10, 150   # orizzontale (salta i bordi e paddle)
 

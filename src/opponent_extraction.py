@@ -16,9 +16,9 @@ if os.path.exists(features_path):
 else:
     df = pd.read_csv(os.path.join(DATA_DIR, "pong_log.csv"))
 
-# Limiti campo per la RACCHETTA SINISTRA (modifica se serve)
+# Limiti campo per la RACCHETTA SINISTRA 
 y_min, y_max = 34, 194
-x_min, x_max = 10, 25   # Bordo sinistro (modifica se serve per il tuo Pong)
+x_min, x_max = 10, 25   # Bordo sinistro 
 
 PADDLE_COLOR = np.array([213, 130, 74])  # Arancione racchetta sinistra
 
