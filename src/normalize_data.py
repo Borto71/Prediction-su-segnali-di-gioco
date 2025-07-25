@@ -34,7 +34,7 @@ df_minmax = pd.DataFrame(X_minmax, columns=[f"{col}_minmax" for col in features]
 df_normalized = pd.concat([df, df_standardized, df_minmax], axis=1)
 
 # 9. Salva in CSV nella stessa cartella
-output_csv = os.path.join(folder, "normalized_data.csv")
+output_csv = os.path.join(folder, "normalized_data3.csv")
 df_normalized.to_csv(output_csv, index=False)
 
 print(f"File salvato: {output_csv}")
