@@ -181,9 +181,8 @@ Questi script:
 **Esempio di risultato visualizzato:**
 
 | ![Player](img/player_img.png) | ![Opponent](img/opponent_img.png) |
-|:----------------------------:|:---------------------------------:|
-|           Player             |            Opponent               |
-
+| :---------------------------: | :-------------------------------: |
+|             Player            |              Opponent             |
 
 ---
 
@@ -202,7 +201,72 @@ Dopo aver eseguito gli script, il file `pong_data_features.csv` conterrà:
 
 ---
 
+## 13. Preprocessing dei dati per il training (`preprocessing.py`)
+
+Dopo aver estratto tutte le feature dal gioco, puoi preparare il dataset per l’addestramento della rete neurale tramite lo script `preprocessing.py`.
+
+### Cosa fa lo script di preprocessing
+
+1. **Caricamento dati**
+
+   * Carica il file CSV originale (`pong_data_features.csv`) con tutte le feature estratte da partite di Pong.
+
+2. **Creazione del target (`action_next`)**
+
+   * Crea una nuova colonna `action_next` che rappresenta l’azione che dovrà essere predetta dal modello, cioè quella eseguita nel frame successivo.
+   * Questo si ottiene con uno shift di una riga verso l’alto della colonna `action`.
+
+3. **Feature engineering**
+
+   * Calcola nuove feature utili al modello:
+
+     * **Velocità della pallina**: `ball_vx`, `ball_vy` (differenza delle coordinate della palla tra frame consecutivi)
+     * **Velocità dei paddle**: `right_paddle_vy`, `left_paddle_vy` (differenza delle coordinate verticali tra frame)
+   * Queste feature aiutano la rete a comprendere la dinamica del gioco e non solo lo stato statico.
+
+4. **Pulizia dati**
+
+   * Elimina le righe con valori NaN, generate da shift e differenze (prime/ultime righe).
+
+5. **Scelta delle feature di input**
+
+   * Definisce le colonne di input per la rete neurale, ad esempio:
+
+     * `ball_x`, `ball_y`, `right_paddle_y`, `left_paddle_y`, `ball_vx`, `ball_vy`, `right_paddle_vy`, `left_paddle_vy`
+   * Il target sarà `action_next`.
+
+6. **Salvataggio**
+
+   * Il dataset preprocessato viene salvato come nuovo CSV (`pong_data_features_preprocessed.csv`) nella stessa cartella.
+
+### Perché questi passaggi
+
+* **Target corretto:** serve fornire la mossa successiva come target, per insegnare al modello a predire l’azione giusta.
+* **Feature dinamiche:** le informazioni sulle velocità rendono la rete capace di imparare strategie di movimento, non solo stati fissi.
+* **Dati puliti:** rimuovere i NaN evita errori in fase di addestramento.
+* **Dataset pronto:** avere già tutte le feature calcolate velocizza i passaggi successivi come train/test split e normalizzazione.
+
+### Passi successivi (non inclusi nello script)
+
+* Split in train/test
+* Normalizzazione delle feature (se non già fatto)
+* Preparazione del dataloader PyTorch
+* Eventuale aggiunta di altre feature derivate
+
+---
+
 ## 📧 Supporto
+
+Per qualsiasi problema:
+
+1. Ricontrolla questa guida.
+2. Se l’errore non è qui, copia l’errore e chiedi a chi ha condiviso il progetto.
+
+---
+
+*A cura di Mattia Bortolaso, Emanuele Girardello, Jiashuo Cheng, Francesco Malfer, e \[contributo sezione preprocessing da OpenAI ChatGPT].*
+
+📧 Supporto
 
 Per qualsiasi problema:
 
