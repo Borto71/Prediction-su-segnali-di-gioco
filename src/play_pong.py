@@ -52,7 +52,7 @@ class PongWindow:
         self.root.after(0, self.game_loop)
         self.root.mainloop()
 
-    def obs_to_photoimage(self, obs):
+    def obs_to_photoimage(self, obs):   
         image = Image.fromarray(obs)
         image = image.resize((obs.shape[1]*2, obs.shape[0]*2))
         return ImageTk.PhotoImage(image)
@@ -85,9 +85,10 @@ class PongWindow:
                 elif reward == 1:
                     self.score_right += 1
 
+                action_map = {0: 0, 2: 1, 3: 2}
                 data.append({
                     'step': self.step,
-                    'action': self.action,
+                    'action': action_map.get(self.action, self.action),  # rimappa 2->1, 3->2
                     'reward': reward,
                     'score_left': self.score_left,
                     'score_right': self.score_right
