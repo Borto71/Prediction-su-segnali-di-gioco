@@ -264,7 +264,7 @@ Per qualsiasi problema:
 
 ---
 
-*A cura di Mattia Bortolaso, Emanuele Girardello, Jiashuo Cheng, Francesco Malfer, e \[contributo sezione preprocessing da OpenAI ChatGPT].*
+*A cura di Mattia Bortolaso, Emanuele Girardello, Jiashuo Cheng, Francesco Malfer*
 
 📧 Supporto
 
