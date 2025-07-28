@@ -13,7 +13,7 @@ SEQ_LEN = 20
 INPUT_DIM = 8
 NUM_CLASSES = 3
 BATCH_SIZE = 32
-EPOCHS = 1000
+EPOCHS = 500
 LR = 1e-3
 DEVICE = 'cuda' if torch.cuda.is_available() else 'cpu'
 
@@ -154,10 +154,10 @@ def evaluate(model, dataset_path):
 
 if __name__ == "__main__":
     
-    #train(load_model=True)  # metti False se vuoi partire da zero
+    train(load_model=True)  # metti False se vuoi partire da zero
 
 
-    TEST_PATH = "/home/emagira/Progetti/AttentionLabPong/src/game_data_20250725/normalized_data2.csv"
+    TEST_PATH = "/home/emagira/Progetti/AttentionLabPong/src/game_data_20250728/normalized_data.csv"
     model = PongTransformer(INPUT_DIM, SEQ_LEN, NUM_CLASSES).to(DEVICE)
     checkpoint = torch.load(CHECKPOINT_PATH)
     model.load_state_dict(checkpoint['model_state_dict'])
