@@ -1,49 +1,60 @@
 import pandas as pd
-import numpy as np
-import sys
 import os
+import sys
 
-if len(sys.argv) < 2:
-    print("Usage: python normalize_data.py <folder> [csv_name]")
+if len(sys.argv) >= 2:
+    folder = sys.argv[1]
+else:
+    folder = input("Inserisci la cartella dati (es: game_data_20250801): ").strip()
+
+if len(sys.argv) >= 3:
+    input_csv = sys.argv[2]
+else:
+    input_csv = input("Nome file da normalizzare (es: pong_data_features_preprocessed.csv): ").strip()
+
+input_csv_path = os.path.join(folder, input_csv)
+if not os.path.exists(input_csv_path):
+    print(f"File non trovato: {input_csv_path}")
     sys.exit(1)
 
-# 1. Ottieni la cartella da riga di comando
-folder = sys.argv[1]
-csv_name = sys.argv[2] if len(sys.argv) > 2 else "pong_log.csv"
+df = pd.read_csv(input_csv_path)
 
-# 2. Costruisci il path del CSV di input
-input_csv = os.path.join(folder, csv_name)
+# Scegli quali colonne NON normalizzare (es: label, azioni, partita, reward)
+cols_to_exclude = ["partita", "action", "action_next", "reward", "score_left", "score_right"]
+cols_to_normalize = [col for col in df.columns if col not in cols_to_exclude and df[col].dtype != "O"]
 
-# 3. Carica il dataset
-df = pd.read_csv(input_csv)
+print("Colonne da normalizzare:", cols_to_normalize)
 
-# 4. Seleziona le colonne da normalizzare (tutte tranne 'partita')
-# Puoi personalizzare questa lista se vuoi normalizzare anche le feature!
-cols_to_normalize = [c for c in df.columns if c not in ['partita'] and df[c].dtype != 'O']
+# Normalizzazione standard (z-score: media 0, dev std 1)
+for col in cols_to_normalize:
+    mean = df[col].mean()
+    std = df[col].std()
+    if std == 0:
+        print(f"Attenzione: std nulla per {col}, salto normalizzazione")
+        continue
+    df[col + "_std"] = (df[col] - mean) / std
 
-eps = 1e-8  # Per evitare divisione per zero
+# Normalizzazione min-max (0-1)
+for col in cols_to_normalize:
+    minv = df[col].min()
+    maxv = df[col].max()
+    if maxv - minv == 0:
+        print(f"Attenzione: min=max per {col}, salto minmax")
+        continue
+    df[col + "_minmax"] = (df[col] - minv) / (maxv - minv)
 
-def normalize_group(gr):
-    arr = gr[cols_to_normalize].values.astype(np.float32)
-    # Standardizzazione
-    arr_std = (arr - arr.mean(axis=0)) / (arr.std(axis=0) + eps)
-    # Min-Max
-    arr_minmax = (arr - arr.min(axis=0)) / (arr.max(axis=0) - arr.min(axis=0) + eps)
-    # DataFrame
-    df_std = pd.DataFrame(arr_std, columns=[f"{col}_std" for col in cols_to_normalize], index=gr.index)
-    df_minmax = pd.DataFrame(arr_minmax, columns=[f"{col}_minmax" for col in cols_to_normalize], index=gr.index)
-    return pd.concat([gr, df_std, df_minmax], axis=1)
+# Crea output dir se non esiste
+out_dir = os.path.join(folder, "normalized_data")
+os.makedirs(out_dir, exist_ok=True)
+basename = os.path.basename(input_csv)
+out_csv = os.path.join(out_dir, "normalized_" + basename)
+df.to_csv(out_csv, index=False)
+print(f"File normalizzato salvato in: {out_csv}")
 
-# 5. Normalizza per partita se esiste la colonna 'partita'
-if 'partita' in df.columns:
-    df_norm = df.groupby('partita', group_keys=False).apply(normalize_group)
-else:
-    df_norm = normalize_group(df)
-
-# 6. Crea cartella "normalized_data" e salva CSV lì
-normalized_dir = os.path.join(folder, "normalized_data")
-os.makedirs(normalized_dir, exist_ok=True)
-output_csv = os.path.join(normalized_dir, f"normalized_{csv_name}")
-
-df_norm.to_csv(output_csv, index=False)
-print(f"File salvato: {output_csv}")
+# Controllo range output
+print("\nRange colonne normalizzate (std):")
+for col in [c for c in df.columns if c.endswith("_std")]:
+    print(f"{col}: min={df[col].min():.2f}, max={df[col].max():.2f}, mean={df[col].mean():.2f}, std={df[col].std():.2f}")
+print("\nRange colonne normalizzate (minmax):")
+for col in [c for c in df.columns if c.endswith("_minmax")]:
+    print(f"{col}: min={df[col].min():.2f}, max={df[col].max():.2f}")
