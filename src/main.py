@@ -11,24 +11,44 @@ def estrai_tutto():
 
 def normalizza():
     folder = input("Inserisci il nome della cartella dati (es: game_data_20250728): ")
-    subprocess.run(["python3", "normalize_data.py", folder])
+    nomefile = input("Nome file da normalizzare (default: pong_data_features_preprocessed.csv): ").strip()
+    if nomefile == "":
+        nomefile = "pong_data_features_preprocessed.csv"
+    file_path = os.path.join(folder, nomefile)
+    if not os.path.exists(file_path):
+        print(f"File non trovato: {file_path}")
+        return
+    result = subprocess.run(["python3", "normalize_data.py", folder, nomefile])
+    if result.returncode == 0:
+        print("Normalizzazione COMPLETATA!")
+    else:
+        print("Errore nella normalizzazione!")
 
 def preprocess_and_normalize():
     folder = input("Inserisci il nome della cartella dati (es: game_data_20250728): ")
-    input_features = os.path.join(folder, "pong_data_features.csv")
+    nomefile = input("Nome file di partenza (default: pong_data_features.csv): ").strip()
+    if nomefile == "":
+        nomefile = "pong_data_features.csv"
+    input_features = os.path.join(folder, nomefile)
+    if not os.path.exists(input_features):
+        print(f"File non trovato: {input_features}")
+        return
     result1 = subprocess.run(["python3", "preprocessing.py", input_features])
     if result1.returncode != 0:
         print("Errore nel preprocessing!")
         return
-    preproc_file = input_features.replace(".csv", "_preprocessed.csv")
-    result2 = subprocess.run(["python3", "normalize_data.py", folder, os.path.basename(preproc_file)])
+    preproc_file = nomefile.replace(".csv", "_preprocessed.csv")
+    preproc_path = os.path.join(folder, preproc_file)
+    if not os.path.exists(preproc_path):
+        print(f"File preprocessato non trovato: {preproc_path}")
+        return
+    result2 = subprocess.run(["python3", "normalize_data.py", folder, preproc_file])
     if result2.returncode == 0:
         print("Preprocessing e normalizzazione COMPLETATI!")
     else:
         print("Errore nella normalizzazione!")
 
 def allena_modello():
-    # Stampa in tempo reale durante l'allenamento!
     os.system("python3 NN/training.py")
 
 def esci():
