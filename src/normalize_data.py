@@ -4,37 +4,46 @@ import sys
 import os
 
 if len(sys.argv) < 2:
-    print("Usage: python normalize_data.py <folder>")
+    print("Usage: python normalize_data.py <folder> [csv_name]")
     sys.exit(1)
 
 # 1. Ottieni la cartella da riga di comando
 folder = sys.argv[1]
+csv_name = sys.argv[2] if len(sys.argv) > 2 else "pong_log.csv"
 
 # 2. Costruisci il path del CSV di input
-input_csv = os.path.join(folder, "pong_data_features.csv")
+input_csv = os.path.join(folder, csv_name)
 
 # 3. Carica il dataset
 df = pd.read_csv(input_csv)
 
-# 4. Seleziona le colonne da normalizzare
-features = ['ball_x', 'ball_y', 'right_paddle_y', 'left_paddle_y']
-X = df[features].values.astype(np.float32)
+# 4. Seleziona le colonne da normalizzare (tutte tranne 'partita')
+# Puoi personalizzare questa lista se vuoi normalizzare anche le feature!
+cols_to_normalize = [c for c in df.columns if c not in ['partita'] and df[c].dtype != 'O']
 
-# 5. Standardizzazione (media 0, std 1)
-X_standardized = (X - X.mean(axis=0)) / X.std(axis=0)
+eps = 1e-8  # Per evitare divisione per zero
 
-# 6. Min-Max Scaling (0-1)
-X_minmax = (X - X.min(axis=0)) / (X.max(axis=0) - X.min(axis=0))
+def normalize_group(gr):
+    arr = gr[cols_to_normalize].values.astype(np.float32)
+    # Standardizzazione
+    arr_std = (arr - arr.mean(axis=0)) / (arr.std(axis=0) + eps)
+    # Min-Max
+    arr_minmax = (arr - arr.min(axis=0)) / (arr.max(axis=0) - arr.min(axis=0) + eps)
+    # DataFrame
+    df_std = pd.DataFrame(arr_std, columns=[f"{col}_std" for col in cols_to_normalize], index=gr.index)
+    df_minmax = pd.DataFrame(arr_minmax, columns=[f"{col}_minmax" for col in cols_to_normalize], index=gr.index)
+    return pd.concat([gr, df_std, df_minmax], axis=1)
 
-# 7. Crea nuovi DataFrame con nomi colonne aggiornati
-df_standardized = pd.DataFrame(X_standardized, columns=[f"{col}_std" for col in features])
-df_minmax = pd.DataFrame(X_minmax, columns=[f"{col}_minmax" for col in features])
+# 5. Normalizza per partita se esiste la colonna 'partita'
+if 'partita' in df.columns:
+    df_norm = df.groupby('partita', group_keys=False).apply(normalize_group)
+else:
+    df_norm = normalize_group(df)
 
-# 8. Unisci tutto in un unico DataFrame
-df_normalized = pd.concat([df, df_standardized, df_minmax], axis=1)
+# 6. Crea cartella "normalized_data" e salva CSV lì
+normalized_dir = os.path.join(folder, "normalized_data")
+os.makedirs(normalized_dir, exist_ok=True)
+output_csv = os.path.join(normalized_dir, f"normalized_{csv_name}")
 
-# 9. Salva in CSV nella stessa cartella
-output_csv = os.path.join(folder, "normalized_data.csv")
-df_normalized.to_csv(output_csv, index=False)
-
+df_norm.to_csv(output_csv, index=False)
 print(f"File salvato: {output_csv}")
