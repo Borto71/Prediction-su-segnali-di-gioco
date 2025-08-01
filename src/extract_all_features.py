@@ -77,7 +77,7 @@ print(f"Partite trovate nel log: {partite}")
 for partita_id in partite:
     print(f"Estrazione features per partita {int(partita_id)}...")
     # Trova il relativo file npy
-    npy_file = os.path.join(REPLAY_DIR, f"partita{int(partita_id)}.npy")
+    npy_file = os.path.join(REPLAY_DIR, f"partita_{int(partita_id)}.npy")
     if not os.path.exists(npy_file):
         print(f"  [!] Frame .npy non trovato per partita {partita_id}, skip!")
         continue
