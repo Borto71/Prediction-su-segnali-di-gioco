@@ -1,60 +1,51 @@
-import pandas as pd
+# normalize_data.py
 import os
-import sys
+import pandas as pd
+import numpy as np
 
-if len(sys.argv) >= 2:
-    folder = sys.argv[1]
-else:
-    folder = input("Inserisci la cartella dati (es: game_data_20250801): ").strip()
+# 1. CHIEDI SOLO IL NOME DELLA CARTELLA
+cartella = input("Inserisci il nome della cartella dati (es: game_data_20250801): ").strip()
+# 2. COSTRUISCI IL PERCORSO DEL FILE CSV PREPROCESSATO
+csv_in = os.path.join(cartella, "pong_data_features_preprocessed.csv")
+if not os.path.exists(csv_in):
+    raise FileNotFoundError(f"File non trovato: {csv_in}")
 
-if len(sys.argv) >= 3:
-    input_csv = sys.argv[2]
-else:
-    input_csv = input("Nome file da normalizzare (es: pong_data_features_preprocessed.csv): ").strip()
+print(f"Carico dati da: {csv_in}")
+df = pd.read_csv(csv_in)
 
-input_csv_path = os.path.join(folder, input_csv)
-if not os.path.exists(input_csv_path):
-    print(f"File non trovato: {input_csv_path}")
-    sys.exit(1)
+# 3. NORMALIZZA LE FEATURE NUMERICHE PRINCIPALI
+to_normalize = [
+    'ball_x', 'ball_y', 'right_paddle_y', 'left_paddle_y',
+    'ball_vx', 'ball_vy', 'right_paddle_vy', 'left_paddle_vy',
+    'dist_right', 'dist_left', 'offset_right', 'ball_angle', 'ball_dir',
+    'relative_vy_right', 'frames_to_right', 'sin_angle', 'cos_angle'
+]
+print("Normalizzo queste colonne:", to_normalize)
 
-df = pd.read_csv(input_csv_path)
+stats = {}
+for col in to_normalize:
+    if col in df.columns:
+        mean = df[col].mean()
+        std = df[col].std()
+        minv = df[col].min()
+        maxv = df[col].max()
+        df[f"{col}_std"] = (df[col] - mean) / (std + 1e-8)
+        df[f"{col}_minmax"] = (df[col] - minv) / (maxv - minv + 1e-8)
+        stats[col] = dict(mean=mean, std=std, min=minv, max=maxv)
 
-# Scegli quali colonne NON normalizzare (es: label, azioni, partita, reward)
-cols_to_exclude = ["partita", "action", "action_next", "reward", "score_left", "score_right"]
-cols_to_normalize = [col for col in df.columns if col not in cols_to_exclude and df[col].dtype != "O"]
+for col in to_normalize:
+    if f"{col}_std" in df.columns and f"{col}_minmax" in df.columns:
+        print(f"{col}_std: {df[f'{col}_std'].min():.2f} / {df[f'{col}_std'].max():.2f}")
+        print(f"{col}_minmax: {df[f'{col}_minmax'].min():.2f} / {df[f'{col}_minmax'].max():.2f}")
 
-print("Colonne da normalizzare:", cols_to_normalize)
+# 4. SALVA SU FILE CON NOME STANDARD
+csv_out = os.path.join(cartella, "pong_data_features_preprocessed_normalized.csv")
+df.to_csv(csv_out, index=False)
+print(f"\nDati normalizzati salvati in: {csv_out}")
 
-# Normalizzazione standard (z-score: media 0, dev std 1)
-for col in cols_to_normalize:
-    mean = df[col].mean()
-    std = df[col].std()
-    if std == 0:
-        print(f"Attenzione: std nulla per {col}, salto normalizzazione")
-        continue
-    df[col + "_std"] = (df[col] - mean) / std
-
-# Normalizzazione min-max (0-1)
-for col in cols_to_normalize:
-    minv = df[col].min()
-    maxv = df[col].max()
-    if maxv - minv == 0:
-        print(f"Attenzione: min=max per {col}, salto minmax")
-        continue
-    df[col + "_minmax"] = (df[col] - minv) / (maxv - minv)
-
-# Crea output dir se non esiste
-out_dir = os.path.join(folder, "normalized_data")
-os.makedirs(out_dir, exist_ok=True)
-basename = os.path.basename(input_csv)
-out_csv = os.path.join(out_dir, "normalized_" + basename)
-df.to_csv(out_csv, index=False)
-print(f"File normalizzato salvato in: {out_csv}")
-
-# Controllo range output
-print("\nRange colonne normalizzate (std):")
-for col in [c for c in df.columns if c.endswith("_std")]:
-    print(f"{col}: min={df[col].min():.2f}, max={df[col].max():.2f}, mean={df[col].mean():.2f}, std={df[col].std():.2f}")
-print("\nRange colonne normalizzate (minmax):")
-for col in [c for c in df.columns if c.endswith("_minmax")]:
-    print(f"{col}: min={df[col].min():.2f}, max={df[col].max():.2f}")
+# (Opzionale) Salva parametri normalizzazione
+import json
+stats_path = os.path.join(cartella, "normstats.json")
+with open(stats_path, "w") as f:
+    json.dump(stats, f, indent=2)
+print(f"Salvati parametri normalizzazione in: {stats_path}")

@@ -6,9 +6,9 @@ import re
 import time
 
 import matplotlib.pyplot as plt  # Se vuoi debug grafico, altrimenti puoi togliere
-
 # ---- CONFIG ----
-DATA_DIR = input("Inserisci il percorso della cartella dati (ad esempio: 'game_data_20240802'): ")
+today = time.strftime("%Y%m%d")
+DATA_DIR = f"game_data_{today}"
 REPLAY_DIR = os.path.join(DATA_DIR, "replay")
 log_path = os.path.join(DATA_DIR, "pong_log.csv")
 features_path = os.path.join(DATA_DIR, "pong_data_features.csv")

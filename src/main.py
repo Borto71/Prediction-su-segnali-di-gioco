@@ -1,3 +1,5 @@
+# main.py (versione smart, solo percorso cartella richiesto)
+
 import os
 import sys
 import subprocess
@@ -10,41 +12,41 @@ def estrai_tutto():
         print("\nQualcosa è andato storto durante l'estrazione!")
 
 def normalizza():
-    folder = input("Inserisci il nome della cartella dati (es: game_data_20250728): ")
-    nomefile = input("Nome file da normalizzare (default: pong_data_features_preprocessed.csv): ").strip()
-    if nomefile == "":
-        nomefile = "pong_data_features_preprocessed.csv"
+    folder = input("Inserisci il nome della cartella dati (es: game_data_20250728): ").strip()
+    nomefile = "pong_data_features_preprocessed.csv"
     file_path = os.path.join(folder, nomefile)
     if not os.path.exists(file_path):
         print(f"File non trovato: {file_path}")
         return
+    # Nuova chiamata: passa cartella e nomefile
     result = subprocess.run(["python3", "normalize_data.py", folder, nomefile])
     if result.returncode == 0:
         print("Normalizzazione COMPLETATA!")
+        print(f"Dati normalizzati in: {os.path.join(folder, nomefile.replace('.csv', '_normalized.csv'))}")
     else:
         print("Errore nella normalizzazione!")
 
 def preprocess_and_normalize():
-    folder = input("Inserisci il nome della cartella dati (es: game_data_20250728): ")
-    nomefile = input("Nome file di partenza (default: pong_data_features.csv): ").strip()
-    if nomefile == "":
-        nomefile = "pong_data_features.csv"
-    input_features = os.path.join(folder, nomefile)
-    if not os.path.exists(input_features):
-        print(f"File non trovato: {input_features}")
+    folder = input("Inserisci il nome della cartella dati (es: game_data_20250728): ").strip()
+    csv_in = os.path.join(folder, "pong_data_features.csv")
+    if not os.path.exists(csv_in):
+        print(f"File non trovato: {csv_in}")
         return
-    result1 = subprocess.run(["python3", "preprocessing.py", input_features])
+    # Preprocessing: automatico, output file fisso
+    result1 = subprocess.run(["python3", "preprocessing.py", folder])
     if result1.returncode != 0:
         print("Errore nel preprocessing!")
         return
-    preproc_file = nomefile.replace(".csv", "_preprocessed.csv")
+    preproc_file = "pong_data_features_preprocessed.csv"
     preproc_path = os.path.join(folder, preproc_file)
     if not os.path.exists(preproc_path):
         print(f"File preprocessato non trovato: {preproc_path}")
         return
+    # Normalizzazione: automatico, output file fisso
     result2 = subprocess.run(["python3", "normalize_data.py", folder, preproc_file])
     if result2.returncode == 0:
         print("Preprocessing e normalizzazione COMPLETATI!")
+        print(f"Dati finali in: {os.path.join(folder, preproc_file.replace('.csv', '_normalized.csv'))}")
     else:
         print("Errore nella normalizzazione!")
 
