@@ -1,5 +1,3 @@
-# main.py (versione smart, solo percorso cartella richiesto)
-
 import os
 import sys
 import subprocess
@@ -18,7 +16,6 @@ def normalizza():
     if not os.path.exists(file_path):
         print(f"File non trovato: {file_path}")
         return
-    # Nuova chiamata: passa cartella e nomefile
     result = subprocess.run(["python3", "normalize_data.py", folder, nomefile])
     if result.returncode == 0:
         print("Normalizzazione COMPLETATA!")
@@ -32,7 +29,6 @@ def preprocess_and_normalize():
     if not os.path.exists(csv_in):
         print(f"File non trovato: {csv_in}")
         return
-    # Preprocessing: automatico, output file fisso
     result1 = subprocess.run(["python3", "preprocessing.py", folder])
     if result1.returncode != 0:
         print("Errore nel preprocessing!")
@@ -42,7 +38,6 @@ def preprocess_and_normalize():
     if not os.path.exists(preproc_path):
         print(f"File preprocessato non trovato: {preproc_path}")
         return
-    # Normalizzazione: automatico, output file fisso
     result2 = subprocess.run(["python3", "normalize_data.py", folder, preproc_file])
     if result2.returncode == 0:
         print("Preprocessing e normalizzazione COMPLETATI!")
@@ -51,7 +46,41 @@ def preprocess_and_normalize():
         print("Errore nella normalizzazione!")
 
 def allena_modello():
-    os.system("python3 NN/training.py")
+    result = subprocess.run(["python3", "NN/training.py"])
+    if result.returncode == 0:
+        print("Training completato!")
+    else:
+        print("Errore durante il training!")
+
+def valuta_modello():
+    folder = input("Inserisci la cartella del nuovo database (es: game_data_20250801): ").strip()
+    nomefile = "pong_data_features_preprocessed_normalized.csv"
+    file_path = os.path.join(folder, nomefile)
+    if not os.path.exists(file_path):
+        print(f"File non trovato: {file_path}")
+        return
+
+    # Autodetect path per test_model.py
+    test_model_paths = [
+        os.path.join("src", "NN", "test_model.py"),
+        os.path.join("NN", "test_model.py"),
+        "test_model.py"
+    ]
+    found = False
+    for path in test_model_paths:
+        if os.path.exists(path):
+            test_model_path = path
+            found = True
+            break
+    if not found:
+        print("Non trovo il file test_model.py! Controlla dove si trova.")
+        return
+
+    result = subprocess.run(["python3", test_model_path, file_path])
+    if result.returncode == 0:
+        print("Valutazione completata!")
+    else:
+        print("Errore durante la valutazione!")
 
 def esci():
     print("Ciao!")
@@ -63,6 +92,7 @@ if __name__ == "__main__":
         "2": ("Normalizza dati", normalizza),
         "3": ("Preprocessing + Normalizza", preprocess_and_normalize),
         "4": ("Allena modello", allena_modello),
+        "5": ("Valuta modello su un nuovo database", valuta_modello),
         "0": ("Esci", esci)
     }
 
