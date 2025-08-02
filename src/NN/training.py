@@ -9,36 +9,47 @@ import os
 from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay
 import matplotlib.pyplot as plt
 
-SEQ_LEN = 20
-INPUT_DIM = 8
+SEQ_LEN = 10
+INPUT_DIM = 9
 NUM_CLASSES = 3
 BATCH_SIZE = 32
-EPOCHS = 500
+EPOCHS = 100
 LR = 1e-3
 DEVICE = 'cuda' if torch.cuda.is_available() else 'cpu'
 
-CHECKPOINT_PATH = "/home/emagira/Progetti/AttentionLabPong/src/NN/checkpoints/checkpoint.pth"
+CHECKPOINT_PATH = "checkpoints/checkpoint.pth"
 
 class PongDatasetFromCSV(Dataset):
     def __init__(self, csv_path, seq_len=50):
         self.seq_len = seq_len
         self.df = pd.read_csv(csv_path)
         self.features = [
-            'ball_x', 'ball_y',
-            'right_paddle_y', 'left_paddle_y',
             'ball_x_std', 'ball_y_std',
-            'right_paddle_y_std', 'left_paddle_y_std'
+            'right_paddle_y_std',
+            'right_paddle_vy_std',
+            'ball_vx_std', 'ball_vy_std',
+            'dist_right_std', 'ball_angle_std', 'ball_dir_std'
         ]
-        self.data = self.df[self.features].values.astype(np.float32)
-        self.actions = self.df['action'].values.astype(np.int64)
-        self.length = len(self.df) - self.seq_len
+        # ---- GESTIONE SEQUENZE SOLO ALL'INTERNO DELLA STESSA PARTITA ----
+        # Questa parte costruisce solo sequenze che non attraversano i confini tra partite diverse
+        self.sequences = []
+        self.targets = []
+        grouped = self.df.groupby('partita', sort=False)
+        for _, part_df in grouped:
+            part_data = part_df[self.features].values.astype(np.float32)
+            part_actions = part_df['action'].values.astype(np.int64)
+            for i in range(len(part_df) - seq_len):
+                self.sequences.append(part_data[i:i+seq_len])
+                self.targets.append(part_actions[i+seq_len])
+        self.length = len(self.sequences)
+        # ---------------------------------------------------------------
 
     def __len__(self):
         return self.length
 
     def __getitem__(self, idx):
-        x_seq = self.data[idx:idx+self.seq_len]
-        y_label = self.actions[idx+self.seq_len]
+        x_seq = self.sequences[idx]
+        y_label = self.targets[idx]
         return torch.tensor(x_seq), torch.tensor(y_label)
 
 class PongTransformer(nn.Module):
@@ -57,19 +68,24 @@ class PongTransformer(nn.Module):
     def forward(self, x):
         x = self.input_proj(x)
         x = x + self.pos_embedding
-        x = x.transpose(0, 1)
+        # x = x.transpose(0, 1) # batch_first=True, quindi NON serve trasporre
         x = self.encoder(x)
-        x = x[-1]
+        x = x[:, -1, :]  # Prendi solo l'ultimo timestep
         out = self.classifier(x)
         return out
 
 def train(load_model=True):
-
-    dataset = PongDatasetFromCSV("/home/emagira/Progetti/AttentionLabPong/src/game_data_20250725/normalized_data.csv", seq_len=SEQ_LEN)
+    os.makedirs(os.path.dirname(CHECKPOINT_PATH), exist_ok=True)
+    dataset = PongDatasetFromCSV("game_data_20250801/normalized_data/normalized_pong_data_features_preprocessed.csv", seq_len=SEQ_LEN)
     dataloader = DataLoader(dataset, batch_size=BATCH_SIZE, shuffle=True)
 
+    # Calcolo dinamico dei pesi delle classi in base al dataset
+    class_counts = Counter(dataset.targets)
+    total = sum(class_counts.values())
+    weights = [total / class_counts.get(i, 1) for i in range(NUM_CLASSES)]
+    weights = torch.tensor(weights, device=DEVICE)
+
     model = PongTransformer(INPUT_DIM, SEQ_LEN, NUM_CLASSES).to(DEVICE)
-    weights = torch.tensor([1.0, 2.0, 2.0], device=DEVICE)
     criterion = nn.CrossEntropyLoss(weight=weights)
     optimizer = optim.Adam(model.parameters(), lr=LR)
 
@@ -119,8 +135,7 @@ def train(load_model=True):
         }, CHECKPOINT_PATH)
 
     print("Distribuzione mosse nel dataset:")
-    print(Counter(dataset.actions))
-
+    print(Counter(dataset.targets))
 
 def evaluate(model, dataset_path):
     model.eval()
@@ -151,13 +166,10 @@ def evaluate(model, dataset_path):
     plt.title("Matrice di Confusione")
     plt.show()
 
-
 if __name__ == "__main__":
-    
     train(load_model=True)  # metti False se vuoi partire da zero
 
-
-    TEST_PATH = "/home/emagira/Progetti/AttentionLabPong/src/game_data_20250728/normalized_data.csv"
+    TEST_PATH = "game_data_20250802/normalized_data/normalized_pong_data_features_preprocessed.csv"
     model = PongTransformer(INPUT_DIM, SEQ_LEN, NUM_CLASSES).to(DEVICE)
     checkpoint = torch.load(CHECKPOINT_PATH)
     model.load_state_dict(checkpoint['model_state_dict'])
