@@ -1,40 +1,51 @@
+# normalize_data.py
+import os
 import pandas as pd
 import numpy as np
-import sys
-import os
 
-if len(sys.argv) < 2:
-    print("Usage: python normalize_data.py <folder>")
-    sys.exit(1)
+# 1. CHIEDI SOLO IL NOME DELLA CARTELLA
+cartella = input("Inserisci il nome della cartella dati (es: game_data_20250801): ").strip()
+# 2. COSTRUISCI IL PERCORSO DEL FILE CSV PREPROCESSATO
+csv_in = os.path.join(cartella, "pong_data_features_preprocessed.csv")
+if not os.path.exists(csv_in):
+    raise FileNotFoundError(f"File non trovato: {csv_in}")
 
-# 1. Ottieni la cartella da riga di comando
-folder = sys.argv[1]
+print(f"Carico dati da: {csv_in}")
+df = pd.read_csv(csv_in)
 
-# 2. Costruisci il path del CSV di input
-input_csv = os.path.join(folder, "pong_data_features.csv")
+# 3. NORMALIZZA LE FEATURE NUMERICHE PRINCIPALI
+to_normalize = [
+    'ball_x', 'ball_y', 'right_paddle_y', 'left_paddle_y',
+    'ball_vx', 'ball_vy', 'right_paddle_vy', 'left_paddle_vy',
+    'dist_right', 'dist_left', 'offset_right', 'ball_angle', 'ball_dir',
+    'relative_vy_right', 'frames_to_right', 'sin_angle', 'cos_angle'
+]
+print("Normalizzo queste colonne:", to_normalize)
 
-# 3. Carica il dataset
-df = pd.read_csv(input_csv)
+stats = {}
+for col in to_normalize:
+    if col in df.columns:
+        mean = df[col].mean()
+        std = df[col].std()
+        minv = df[col].min()
+        maxv = df[col].max()
+        df[f"{col}_std"] = (df[col] - mean) / (std + 1e-8)
+        df[f"{col}_minmax"] = (df[col] - minv) / (maxv - minv + 1e-8)
+        stats[col] = dict(mean=mean, std=std, min=minv, max=maxv)
 
-# 4. Seleziona le colonne da normalizzare
-features = ['ball_x', 'ball_y', 'right_paddle_y', 'left_paddle_y']
-X = df[features].values.astype(np.float32)
+for col in to_normalize:
+    if f"{col}_std" in df.columns and f"{col}_minmax" in df.columns:
+        print(f"{col}_std: {df[f'{col}_std'].min():.2f} / {df[f'{col}_std'].max():.2f}")
+        print(f"{col}_minmax: {df[f'{col}_minmax'].min():.2f} / {df[f'{col}_minmax'].max():.2f}")
 
-# 5. Standardizzazione (media 0, std 1)
-X_standardized = (X - X.mean(axis=0)) / X.std(axis=0)
+# 4. SALVA SU FILE CON NOME STANDARD
+csv_out = os.path.join(cartella, "pong_data_features_preprocessed_normalized.csv")
+df.to_csv(csv_out, index=False)
+print(f"\nDati normalizzati salvati in: {csv_out}")
 
-# 6. Min-Max Scaling (0-1)
-X_minmax = (X - X.min(axis=0)) / (X.max(axis=0) - X.min(axis=0))
-
-# 7. Crea nuovi DataFrame con nomi colonne aggiornati
-df_standardized = pd.DataFrame(X_standardized, columns=[f"{col}_std" for col in features])
-df_minmax = pd.DataFrame(X_minmax, columns=[f"{col}_minmax" for col in features])
-
-# 8. Unisci tutto in un unico DataFrame
-df_normalized = pd.concat([df, df_standardized, df_minmax], axis=1)
-
-# 9. Salva in CSV nella stessa cartella
-output_csv = os.path.join(folder, "normalized_data.csv")
-df_normalized.to_csv(output_csv, index=False)
-
-print(f"File salvato: {output_csv}")
+# (Opzionale) Salva parametri normalizzazione
+import json
+stats_path = os.path.join(cartella, "normstats.json")
+with open(stats_path, "w") as f:
+    json.dump(stats, f, indent=2)
+print(f"Salvati parametri normalizzazione in: {stats_path}")
