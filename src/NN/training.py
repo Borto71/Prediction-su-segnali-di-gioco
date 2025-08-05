@@ -32,7 +32,7 @@ USE_CLASS_WEIGHTS = True
 
 SPLIT_BY_PARTITA = True
 VAL_PARTITE = None
-CSV_PATH = "game_data_20250802/pong_data_features_preprocessed_normalized.csv"
+CSV_PATH = "game_data_20250805/pong_data_features_preprocessed_normalized.csv"
 
 # =========================
 # DATASET
@@ -188,7 +188,10 @@ def train(load_model=False):
         print("Uso CrossEntropy con pesi:", class_weights.tolist())
 
     optimizer = optim.Adam(model.parameters(), lr=LR, weight_decay=0.0)
-    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='max', patience=6, verbose=True)
+    try:
+        scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='max', patience=6, verbose=True)
+    except TypeError:
+        scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='max', patience=6)
 
     best_val_f1 = -1.0
     patience_counter = 0
