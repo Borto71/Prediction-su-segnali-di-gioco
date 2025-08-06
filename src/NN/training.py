@@ -3,6 +3,7 @@ import copy
 import numpy as np
 import pandas as pd
 from collections import Counter
+import sys
 
 import torch
 import torch.nn as nn
@@ -32,7 +33,14 @@ USE_CLASS_WEIGHTS = True
 
 SPLIT_BY_PARTITA = True
 VAL_PARTITE = None
-CSV_PATH = "game_data_20250806/pong_data_features_preprocessed_normalized.csv"
+
+# Controlla che venga passato almeno un argomento da linea di comando
+if len(sys.argv) < 2:
+    raise ValueError("Uso: python preprocessing.py <nome_cartella>")
+
+CSV_PATH = sys.argv[1].strip()
+
+csv_in = os.path.join(CSV_PATH, "pong_data_features_preprocessed_normalized.csv")
 
 # =========================
 # DATASET
@@ -141,8 +149,8 @@ def choose_val_partite(df, target_ratio=0.2):
 # =========================
 def train(load_model=False):
     os.makedirs(os.path.dirname(CHECKPOINT_PATH), exist_ok=True)
-    full_df = pd.read_csv(CSV_PATH)
-    dataset = PongDatasetFromCSV(CSV_PATH, seq_len=SEQ_LEN)
+    full_df = pd.read_csv(csv_in)
+    dataset = PongDatasetFromCSV(csv_in, seq_len=SEQ_LEN)
 
     # === Check numero partite ===
     tutte_le_partite = set(dataset.seq_partita)
