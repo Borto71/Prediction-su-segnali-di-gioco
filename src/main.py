@@ -45,7 +45,8 @@ def preprocess_and_normalize():
         print("Errore nella normalizzazione!")
 
 def allena_modello():
-    result = subprocess.run(["python3", "NN/training.py"])
+    folder = input("Inserisci il nome della cartella dati (es: game_data_20250728): ").strip()
+    result = subprocess.run(["python3", "NN/training.py", folder])
     if result.returncode == 0:
         print("Training completato!")
     else:
