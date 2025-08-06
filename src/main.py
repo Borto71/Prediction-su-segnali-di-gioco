@@ -44,6 +44,12 @@ def preprocess_and_normalize():
     else:
         print("Errore nella normalizzazione!")
 
+def test_dataset():
+    folder = input("Inserisci il nome della cartella dati (es: game_data_20250728): ").strip()
+    result = subprocess.run(["python3", "test_dataset.py", folder])
+    if result.returncode != 0:
+        print("Dataset corrotto")
+
 def allena_modello():
     folder = input("Inserisci il nome della cartella dati (es: game_data_20250728): ").strip()
     result = subprocess.run(["python3", "NN/training.py", folder])
@@ -91,8 +97,9 @@ if __name__ == "__main__":
         "1": ("Estrai TUTTO (file unico: pallina + paddle + opponent, automatico)", estrai_tutto),
         #"2": ("Normalizza dati", normalizza),
         "2": ("Preprocessing + Normalizza", preprocess_and_normalize),
-        "3": ("Allena modello", allena_modello),
-        "4": ("Valuta modello su un nuovo database", valuta_modello),
+        "3": ("Test automatici sul dataset", test_dataset),
+        "4": ("Allena modello", allena_modello),
+        "5": ("Valuta modello su un nuovo database", valuta_modello),
         "0": ("Esci", esci)
     }
 
