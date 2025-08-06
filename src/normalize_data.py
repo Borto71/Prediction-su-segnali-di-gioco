@@ -50,8 +50,15 @@ csv_out = os.path.join(cartella, "pong_data_features_preprocessed_normalized.csv
 df.to_csv(csv_out, index=False)
 print(f"\nDati normalizzati salvati in: {csv_out}")
 
+def convert(o):
+    if isinstance(o, np.integer):
+        return int(o)
+    if isinstance(o, np.floating):
+        return float(o)
+    raise TypeError(f"Type {type(o)} not serializable")
+
 # 7. Salva le statistiche
 stats_path = os.path.join(cartella, "normstats.json")
 with open(stats_path, "w") as f:
-    json.dump(stats, f, indent=2)
+    json.dump(stats, f, indent=2, default=convert)
 print(f"Salvati parametri normalizzazione in: {stats_path}")
