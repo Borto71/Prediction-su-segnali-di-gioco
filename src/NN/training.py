@@ -32,7 +32,7 @@ USE_CLASS_WEIGHTS = True
 
 SPLIT_BY_PARTITA = True
 VAL_PARTITE = None
-CSV_PATH = "game_data_20250805/pong_data_features_preprocessed_normalized.csv"
+CSV_PATH = "game_data_20250806/pong_data_features_preprocessed_normalized.csv"
 
 # =========================
 # DATASET
@@ -144,13 +144,26 @@ def train(load_model=False):
     full_df = pd.read_csv(CSV_PATH)
     dataset = PongDatasetFromCSV(CSV_PATH, seq_len=SEQ_LEN)
 
-    if SPLIT_BY_PARTITA:
+    # === Check numero partite ===
+    tutte_le_partite = set(dataset.seq_partita)
+    num_partite = len(tutte_le_partite)
+
+    if SPLIT_BY_PARTITA and num_partite <= 1:
+        print(f"[ATTENZIONE] Solo {num_partite} partita disponibile. Disattivo SPLIT_BY_PARTITA.")
+        split_by_partita = False
+    else:
+        split_by_partita = SPLIT_BY_PARTITA
+
+    if split_by_partita:
         val_games = VAL_PARTITE or choose_val_partite(full_df, target_ratio=0.2)
         print(f"[SPLIT] Partite in VALIDAZIONE: {val_games}")
 
         train_idx, val_idx = [], []
         for i, pid in enumerate(dataset.seq_partita):
             (val_idx if pid in val_games else train_idx).append(i)
+
+        if len(train_idx) == 0:
+            raise ValueError("Il set di training è vuoto! Controlla SPLIT_BY_PARTITA e il numero di partite.")
     else:
         from sklearn.model_selection import train_test_split
         indices = np.arange(len(dataset))
