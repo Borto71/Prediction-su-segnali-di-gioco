@@ -1,6 +1,7 @@
 import os
 import sys
 import subprocess
+from tkinter import *
 
 def estrai_tutto():
     result = subprocess.run(["python3", "extract_all_features.py"])
@@ -93,13 +94,44 @@ def esci():
     sys.exit()
 
 if __name__ == "__main__":
+  
+    # Create object 
+    root = Tk() 
+    
+    # Adjust size 
+    root.geometry("500x500")
+    root.title("Prediction Pong")
+
+    # Configure grid columns and rows to expand properly
+    root.grid_columnconfigure(0, weight=1)
+    root.grid_columnconfigure(1, weight=2)
+    root.grid_columnconfigure(2, weight=1)
+    root.grid_rowconfigure(0, weight=1)
+    root.grid_rowconfigure(1, weight=50)
+    root.grid_rowconfigure(2, weight=50)
+    root.grid_rowconfigure(3, weight=50)
+
+    # Create welcome label and adjust font
+    welcomeLabel = Label(root, text="Benvenuto in Prediction Pong!", font=('Helvetica', 16, 'bold'), anchor="center", justify="center")
+    welcomeLabel.grid(row=0, column=0, padx=10, pady=10, columnspan=3, sticky="nsew")
+
+    newGameBtn = Button(root, text="Gioca a Pong", command=lambda: subprocess.run(["python3", "play_pong.py"]), height=2, width=20)
+    newGameBtn.grid(row=1, column=1, padx=10, pady=10, sticky="nsew")
+
+    nextBtn = Button(root, text="Avanti", height=2, width=50)
+    nextBtn.grid(row=3, column=1, padx=10, pady=10, sticky="nsew")
+
+    # Execute tkinter
+    root.mainloop()
+
+
     azioni = {
         "1": ("Estrai TUTTO (file unico: pallina + paddle + opponent, automatico)", estrai_tutto),
         #"2": ("Normalizza dati", normalizza),
         "2": ("Preprocessing + Normalizza", preprocess_and_normalize),
         "3": ("Test automatici sul dataset", test_dataset),
         "4": ("Allena modello", allena_modello),
-        "5": ("Valuta modello su un nuovo database", valuta_modello),
+        "5": ("Valuta modello su un nuovo dataset", valuta_modello),
         "0": ("Esci", esci)
     }
 
