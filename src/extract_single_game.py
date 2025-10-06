@@ -91,7 +91,7 @@ for partita_id in partite:
 
     step_min = min(len(frames), len(idx_log))
     if len(frames) != len(idx_log):
-        print(f"  ⚠️  {len(frames)} frame ma {len(idx_log)} righe di log, taglio a {step_min} step.")
+        print(f"{len(frames)} frame ma {len(idx_log)} righe di log, taglio a {step_min} step.")
 
     ball_xs, ball_ys, right_paddle_ys, left_paddle_ys = [], [], [], []
     for i in range(step_min):

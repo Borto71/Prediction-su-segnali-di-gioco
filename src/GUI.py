@@ -41,10 +41,10 @@ def extract_selected_game_data():
         print("Nessuna cartella selezionata!")
         return
     
-    script_path = os.path.join(".", "extract_single_game.py")
+    script_path = os.path.join(".", "extract_all_features.py")
     if os.path.exists(script_path):
         print(f"Estrazione dati da {selected}...")
-        subprocess.run(["python", script_path, selected])
+        subprocess.run(["python", script_path])
         print("Estrazione completata!")
     else:
         print("Errore: script extract_single_game.py non trovato!")
