@@ -49,19 +49,34 @@ def extract_selected_game_data():
     else:
         print("Errore: script extract_single_game.py non trovato!")
 
-# buttons
-newGameButton = Button(window, text="Play a new game", command=play_new_game)
-newGameButton.pack(pady=10)
+# label
+label = Label(
+    window,
+    text="Seleziona una cartella di dati di gioco o avvia una nuova partita:",
+    bg="black",
+    fg="white",
+    font=("Arial", 14),
+    wraplength=400,
+    justify="center"
+)
+label.pack(pady=10)
 
-extractDataButton = Button(window, text = "Process the selected game_data", command = extract_selected_game_data)
-extractDataButton.pack(pady=10)
+# buttons
+newGameButton = Button(window, text="Nuova Partita", command=play_new_game)
+newGameButton.pack(pady=10, fill=X, padx=20)
 
 # listbox
 listbox = Listbox(window, bg="azure", fg="black", font=("Arial", 12))
-listbox.pack(padx=20, pady=20, fill=BOTH, expand=True)
+listbox.pack(padx=(20, 0), pady=20, fill=BOTH, expand=True)
 
-# layout
+button_frame = Frame(window, bg="black")
+button_frame.pack(pady=10)
 
+extractDataButton = Button(button_frame, text="Processa i dati di gioco selezionati", command=extract_selected_game_data)
+extractDataButton.pack(side=LEFT, padx=5)
+
+exitButton = Button(button_frame, text="Esci", command=window.quit)
+exitButton.pack(side=LEFT, padx=5)
 
 # initial render
 update_listbox()
