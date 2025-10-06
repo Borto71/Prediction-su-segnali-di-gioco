@@ -73,7 +73,7 @@ def run_extraction(selected, text_widget):
     else:
             text_widget.insert(END, "Script normalize_data.py not found.\n")
 
-def extract_selected_game_data():
+def openTrainingWindow():
     selected = listbox.get(ACTIVE)
     if not selected:
         print("Nessuna cartella selezionata!")
@@ -97,13 +97,6 @@ def extract_selected_game_data():
 
     
 
-
-def on_select(event):
-    global cartella_scelta
-    selected = listbox.get(ACTIVE)
-    cartella_scelta = selected
-    print(f"Cartella selezionata: {cartella_scelta}")
-
 # label
 label = Label(
     window,
@@ -123,13 +116,12 @@ newGameButton.pack(pady=10)
 # listbox
 listbox = Listbox(window, bg="azure", fg="black", font=("Arial", 12))
 listbox.pack(padx=20, pady=20, fill=BOTH, expand=True)
-listbox.bind("<<ListboxSelect>>", on_select)
 
 # buttons + Frame
 button_frame = Frame(window, bg="black")
 button_frame.pack(pady=10)
 
-extractDataButton = Button(button_frame, text="Processa i dati di gioco selezionati", command=extract_selected_game_data)
+extractDataButton = Button(button_frame, text="Processa i dati di gioco selezionati", command=openTrainingWindow)
 extractDataButton.pack(side=LEFT, padx=5)
 
 exitButton = Button(button_frame, text="Esci", command=window.quit)
