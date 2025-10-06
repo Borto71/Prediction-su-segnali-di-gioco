@@ -5,7 +5,6 @@ from tkinter import *
 from tkinter import ttk
 
 cartella_scelta = ""
-maxProgressBar = 100
 
 # main window
 window = Tk()
@@ -43,7 +42,7 @@ def play_new_game():
 
 
 #
-def run_extraction(selected, text_widget):
+def run_extraction(selected, text_widget, progress_bar, btn_next):
     selected = listbox.get(ACTIVE)
     if not selected:
         print("Nessuna cartella selezionata!")
@@ -53,6 +52,7 @@ def run_extraction(selected, text_widget):
     if os.path.exists(script_path):
         text_widget.insert(END, f"Estracting data from {selected}...\n")
         subprocess.run(["python", script_path])
+        updatePB(progress_bar, btn_next)
         text_widget.insert(END, "Extraction completed...\n")
     else:
         print("Errore: script extract_single_game.py non trovato!")
@@ -62,6 +62,7 @@ def run_extraction(selected, text_widget):
             text_widget.insert(END, "Preprocessing data...\n")
             text_widget.update()
             subprocess.run(["python", preprocess_script, selected])
+            updatePB(progress_bar, btn_next)
             text_widget.insert(END, "Data preprocessed !\n")
     else:
             text_widget.insert(END, "Script normalize_data.py not found.\n")
@@ -71,15 +72,33 @@ def run_extraction(selected, text_widget):
             text_widget.insert(END, "Normalizing data...\n")
             text_widget.update()
             subprocess.run(["python", norm_script, selected])
+            updatePB(progress_bar, btn_next)
             text_widget.insert(END, "Data Normalized !\n")
     else:
             text_widget.insert(END, "Script normalize_data.py not found.\n")
+    updatePB(progress_bar, btn_next)
 
-def updatePB(progress_bar):
+def updatePB(progress_bar, btn_next=None):
     if progress_bar['value'] < progress_bar['maximum']:
         progress_bar['value'] += 10
     else:
-        progress_bar['value'] = 0
+        if btn_next:
+            btn_next.config(state=NORMAL)
+
+# train and test function
+def run_training():
+    epochs = entry_epochs.get()
+    batch_size = entry_batch.get()
+    selected = listbox.get(ACTIVE)
+    if not selected:
+        print("Nessuna cartella selezionata!")
+        return
+    script_path = os.path.join(".", "train_and_test_model.py")
+    if os.path.exists(script_path):
+        subprocess.run(["python", script_path, selected, epochs, batch_size])
+    else:
+        print("Errore: file train_and_test_model.py non trovato!")
+
 
 def openTrainingWindow():
     selected = listbox.get(ACTIVE)
@@ -99,19 +118,67 @@ def openTrainingWindow():
     text_output.pack(padx=10, pady=10)
 
     ## append progress bar
-    progress_bar = ttk.Progressbar(new_win, length=300, mode='determinate', maximum=maxProgressBar)
+    progress_bar = ttk.Progressbar(new_win, length=300, mode='determinate', maximum=30)
     progress_bar.pack(pady=10)
+    progress_bar['value'] = 0  # inizializza a 0
 
     button_frame = Frame(new_win, bg="black")
     button_frame.pack(pady=10)
 
-    Button(button_frame, text="Update", command=lambda: updatePB(progress_bar)).pack(side=LEFT, pady=5)
+    btn_next = Button(button_frame, text="Next", command=openConfigTrainingWindow)
+    btn_next.pack(side=LEFT, padx=5)
+    btn_next.config(state=DISABLED)
     Button(button_frame, text="Chiudi", command=new_win.destroy).pack(side=LEFT, pady=5)
 
     # avvia thread separato per non bloccare la GUI
-    threading.Thread(target=run_extraction, args=(selected, text_output), daemon=True).start()
+    threading.Thread(target=run_extraction, args=(selected, text_output, progress_bar, btn_next), daemon=True).start()
 
-    
+def openConfigTrainingWindow():
+    new_win = Toplevel(window)
+    new_win.geometry("500x450")
+    new_win.title("Train and test the model")
+    new_win.config(bg="black")
+
+    # Frame for grid layout
+    input_frame = Frame(new_win, bg="black")
+    input_frame.pack(pady=30)
+
+    # Label and entry for epochs
+    label_epochs = Label(
+        input_frame,
+        text="Numero di epoche:",
+        bg="black",
+        fg="white",
+        font=("Arial", 14),
+        justify="right"
+    )
+    label_epochs.grid(row=0, column=0, padx=10, pady=10, sticky="e")
+    entry_epochs = Entry(input_frame, bg="azure", fg="black", font=("Arial", 12), width=10)
+    entry_epochs.grid(row=0, column=1, padx=10, pady=10)
+    entry_epochs.insert(0, "50")  # default value
+
+    # Label and entry for batch size
+    label_batch = Label(
+        input_frame,
+        text="Dimensione del batch:",
+        bg="black",
+        fg="white",
+        font=("Arial", 14),
+        justify="right"
+    )
+    label_batch.grid(row=1, column=0, padx=10, pady=10, sticky="e")
+    entry_batch = Entry(input_frame, bg="azure", fg="black", font=("Arial", 12), width=10)
+    entry_batch.grid(row=1, column=1, padx=10, pady=10)
+    entry_batch.insert(0, "32")  # default value
+
+    button_frame2 = Frame(new_win, bg="black")
+    button_frame2.pack(pady=10)
+
+    extractDataButton = Button(button_frame2, text="Train and test the model", command=run_training)
+    extractDataButton.pack(side=LEFT, padx=5)
+
+    exitButton = Button(button_frame2, text="Esci", command=new_win.quit)
+    exitButton.pack(side=LEFT, padx=5)
 
 # label
 label = Label(
@@ -148,65 +215,3 @@ update_listbox()
 
 
 window.mainloop()
-
-window2 = Tk()
-window2.geometry("450x250")
-window2.title("Train and test the model")
-window2.config(background="black")
-
-# Frame for grid layout
-input_frame = Frame(window2, bg="black")
-input_frame.pack(pady=30)
-
-# Label and entry for epochs
-label_epochs = Label(
-    input_frame,
-    text="Numero di epoche:",
-    bg="black",
-    fg="white",
-    font=("Arial", 14),
-    justify="right"
-)
-label_epochs.grid(row=0, column=0, padx=10, pady=10, sticky="e")
-entry_epochs = Entry(input_frame, bg="azure", fg="black", font=("Arial", 12), width=10)
-entry_epochs.grid(row=0, column=1, padx=10, pady=10)
-entry_epochs.insert(0, "50")  # default value
-
-# Label and entry for batch size
-label_batch = Label(
-    input_frame,
-    text="Dimensione del batch:",
-    bg="black",
-    fg="white",
-    font=("Arial", 14),
-    justify="right"
-)
-label_batch.grid(row=1, column=0, padx=10, pady=10, sticky="e")
-entry_batch = Entry(input_frame, bg="azure", fg="black", font=("Arial", 12), width=10)
-entry_batch.grid(row=1, column=1, padx=10, pady=10)
-entry_batch.insert(0, "32")  # default value
-
-# train and test function
-def train_and_test_model():
-    epochs = entry_epochs.get()
-    batch_size = entry_batch.get()
-    selected = listbox.get(ACTIVE)
-    if not selected:
-        print("Nessuna cartella selezionata!")
-        return
-    script_path = os.path.join(".", "train_and_test_model.py")
-    if os.path.exists(script_path):
-        subprocess.run(["python", script_path, selected, epochs, batch_size])
-    else:
-        print("Errore: file train_and_test_model.py non trovato!")
-
-# buttons + Frame
-button_frame2 = Frame(window2, bg="black")
-button_frame2.pack(pady=10)
-
-extractDataButton = Button(button_frame2, text="Train and test the model", command=train_and_test_model)
-extractDataButton.pack(side=LEFT, padx=5)
-
-exitButton = Button(button_frame2, text="Esci", command=window2.quit)
-exitButton.pack(side=LEFT, padx=5)
-window2.mainloop()
