@@ -4,7 +4,7 @@ from tkinter import *
 
 # main window
 window = Tk()
-window.geometry("420x420")
+window.geometry("450x450")
 window.title("Prediction game signals")
 window.config(background="black")
 
@@ -51,6 +51,18 @@ def extract_selected_game_data():
 
     script_path = os.path.join(".", "normalize_data.py")
 
+# label
+label = Label(
+    window,
+    text="Seleziona una cartella di dati di gioco o avvia una nuova partita:",
+    bg="black",
+    fg="white",
+    font=("Arial", 14),
+    wraplength=400,
+    justify="center"
+)
+label.pack(pady=10)
+
 # play new game Button
 newGameButton = Button(window, text="Play a new game", command=play_new_game)
 newGameButton.pack(pady=10)
@@ -60,9 +72,16 @@ listbox = Listbox(window, bg="azure", fg="black", font=("Arial", 12))
 listbox.pack(padx=20, pady=20, fill=BOTH, expand=True)
 
 
+
 # extract selected game_data Button
-extractDataButton = Button(window, text = "Process the selected game_data", command = extract_selected_game_data)
-extractDataButton.pack(pady=10)
+button_frame = Frame(window, bg="black")
+button_frame.pack(pady=10)
+
+extractDataButton = Button(button_frame, text="Processa i dati di gioco selezionati", command=extract_selected_game_data)
+extractDataButton.pack(side=LEFT, padx=5)
+
+exitButton = Button(button_frame, text="Esci", command=window.quit)
+exitButton.pack(side=LEFT, padx=5)
 
 # initial render
 update_listbox()
