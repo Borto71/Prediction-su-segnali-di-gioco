@@ -34,6 +34,12 @@ USE_CLASS_WEIGHTS = True
 SPLIT_BY_PARTITA = True
 VAL_PARTITE = None
 
+
+if len(sys.argv) > 3:
+    BATCH_SIZE = int(sys.argv[3])
+if len(sys.argv) > 4:
+    EPOCHS = int(sys.argv[4])
+
 # Controlla che venga passato almeno un argomento da linea di comando
 if len(sys.argv) < 2:
     raise ValueError("Uso: python preprocessing.py <nome_cartella>")
