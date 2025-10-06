@@ -47,6 +47,23 @@ if len(sys.argv) < 2:
 CSV_PATH = os.path.join(sys.argv[1].strip(), "pong_data_features_preprocessed_normalized.csv")
 
 # =========================
+# CONFIG
+# =========================
+print(f"Usando device: {DEVICE}")
+if not os.path.exists(CSV_PATH):
+    raise FileNotFoundError(f"File non trovato: {CSV_PATH}")
+print(f"File CSV: {CSV_PATH}")
+print(f"Parametri:")
+print(f"  epochs      = {EPOCHS}")
+print(f"  batch_size  = {BATCH_SIZE}")
+print(f"  seq_len     = {SEQ_LEN}")
+print(f"  input_dim   = {INPUT_DIM}")
+print(f"  num_classes = {NUM_CLASSES}")
+print(f"  patience    = {PATIENCE}")
+print(f"  dropout     = {DROPOUT}")
+
+
+# =========================
 # DATASET
 # =========================
 class PongDatasetFromCSV(Dataset):

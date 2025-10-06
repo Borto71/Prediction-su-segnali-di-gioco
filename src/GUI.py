@@ -86,18 +86,16 @@ def updatePB(progress_bar, btn_next=None):
             btn_next.config(state=NORMAL)
 
 # train and test function
-def run_training():
-    epochs = entry_epochs.get()
-    batch_size = entry_batch.get()
+def run_training(epochs, batch_size, sequence_length, input_dim, num_classes, patience, dropout):
     selected = listbox.get(ACTIVE)
     if not selected:
         print("Nessuna cartella selezionata!")
         return
-    script_path = os.path.join(".", "train_and_test_model.py")
+    script_path = os.path.join(".", "./NN/training.py")
     if os.path.exists(script_path):
-        subprocess.run(["python", script_path, selected, epochs, batch_size])
+        subprocess.run(["python", script_path, selected, epochs, batch_size, sequence_length, input_dim, num_classes, patience, dropout])
     else:
-        print("Errore: file train_and_test_model.py non trovato!")
+        print("Errore: file training.py non trovato!")
 
 
 def openTrainingWindow():
@@ -143,38 +141,75 @@ def openConfigTrainingWindow():
     input_frame = Frame(new_win, bg="black")
     input_frame.pack(pady=30)
 
-    # Label and entry for epochs
-    label_epochs = Label(
-        input_frame,
-        text="Numero di epoche:",
-        bg="black",
-        fg="white",
-        font=("Arial", 14),
-        justify="right"
-    )
-    label_epochs.grid(row=0, column=0, padx=10, pady=10, sticky="e")
-    entry_epochs = Entry(input_frame, bg="azure", fg="black", font=("Arial", 12), width=10)
-    entry_epochs.grid(row=0, column=1, padx=10, pady=10)
-    entry_epochs.insert(0, "50")  # default value
+    # EPOCHS = 16
+    # BATCH_SIZE = 16
+    # SEQ_LEN = 10
+    # INPUT_DIM = 12
+    # NUM_CLASSES = 3
+    # PATIENCE = 20
+    # DROPOUT = 0.1
 
-    # Label and entry for batch size
-    label_batch = Label(
-        input_frame,
-        text="Dimensione del batch:",
-        bg="black",
-        fg="white",
-        font=("Arial", 14),
-        justify="right"
-    )
-    label_batch.grid(row=1, column=0, padx=10, pady=10, sticky="e")
-    entry_batch = Entry(input_frame, bg="azure", fg="black", font=("Arial", 12), width=10)
-    entry_batch.grid(row=1, column=1, padx=10, pady=10)
-    entry_batch.insert(0, "32")  # default value
+    sequence_length = 10
+    input_dim = 12
+    num_classes = 3
+    patience = 5
+    dropout = 0.1
+
+    # Labels
+    Label(input_frame, text="Epochs:", bg="black", fg="white", font=("Arial", 12)).grid(row=0, column=0, padx=5, pady=5, sticky=E)
+    Label(input_frame, text="Batch Size:", bg="black", fg="white", font=("Arial", 12)).grid(row=1, column=0, padx=5, pady=5, sticky=E)
+    Label(input_frame, text="Sequence Length:", bg="black", fg="white", font=("Arial", 12)).grid(row=2, column=0, padx=5, pady=5, sticky=E)
+    Label(input_frame, text="Input Dim:", bg="black", fg="white", font=("Arial", 12)).grid(row=3, column=0, padx=5, pady=5, sticky=E)
+    Label(input_frame, text="Num Classes:", bg="black", fg="white", font=("Arial", 12)).grid(row=4, column=0, padx=5, pady=5, sticky=E)
+    Label(input_frame, text="Patience:", bg="black", fg="white", font=("Arial", 12)).grid(row=5, column=0, padx=5, pady=5, sticky=E)
+    Label(input_frame, text="Dropout:", bg="black", fg="white", font=("Arial", 12)).grid(row=6, column=0, padx=5, pady=5, sticky=E)
+
+    # Default values
+    entry_epochs = Entry(input_frame, width=10)
+    entry_epochs.insert(0, "50")
+    entry_epochs.grid(row=0, column=1, padx=5, pady=5)
+
+    entry_batch = Entry(input_frame, width=10)
+    entry_batch.insert(0, "32")
+    entry_batch.grid(row=1, column=1, padx=5, pady=5)
+
+    entry_seq_len = Entry(input_frame, width=10)
+    entry_seq_len.insert(0, str(sequence_length))
+    entry_seq_len.grid(row=2, column=1, padx=5, pady=5)
+
+    entry_input_dim = Entry(input_frame, width=10)
+    entry_input_dim.insert(0, str(input_dim))
+    entry_input_dim.grid(row=3, column=1, padx=5, pady=5)
+
+    entry_num_classes = Entry(input_frame, width=10)
+    entry_num_classes.insert(0, str(num_classes))
+    entry_num_classes.grid(row=4, column=1, padx=5, pady=5)
+
+    entry_patience = Entry(input_frame, width=10)
+    entry_patience.insert(0, str(patience))
+    entry_patience.grid(row=5, column=1, padx=5, pady=5)
+
+    entry_dropout = Entry(input_frame, width=10)
+    entry_dropout.insert(0, str(dropout))
+    entry_dropout.grid(row=6, column=1, padx=5, pady=5)
+
 
     button_frame2 = Frame(new_win, bg="black")
     button_frame2.pack(pady=10)
 
-    extractDataButton = Button(button_frame2, text="Train and test the model", command=run_training)
+    extractDataButton = Button(
+        button_frame2,
+        text="Train and test the model",
+        command=lambda: run_training(
+            entry_epochs.get(),
+            entry_batch.get(),
+            entry_seq_len.get(),
+            entry_input_dim.get(),
+            entry_num_classes.get(),
+            entry_patience.get(),
+            entry_dropout.get()
+        )
+    )
     extractDataButton.pack(side=LEFT, padx=5)
 
     exitButton = Button(button_frame2, text="Esci", command=new_win.quit)
