@@ -2,6 +2,8 @@ import os
 import subprocess
 from tkinter import *
 
+cartella_scelta = ""
+
 # main window
 window = Tk()
 window.geometry("450x450")
@@ -51,6 +53,12 @@ def extract_selected_game_data():
 
     script_path = os.path.join(".", "normalize_data.py")
 
+def on_select(event):
+    global cartella_scelta
+    selected = listbox.get(ACTIVE)
+    cartella_scelta = selected
+    print(f"Cartella selezionata: {cartella_scelta}")
+
 # label
 label = Label(
     window,
@@ -70,8 +78,7 @@ newGameButton.pack(pady=10)
 # listbox
 listbox = Listbox(window, bg="azure", fg="black", font=("Arial", 12))
 listbox.pack(padx=20, pady=20, fill=BOTH, expand=True)
-
-
+listbox.bind("<<ListboxSelect>>", on_select)
 
 # extract selected game_data Button
 button_frame = Frame(window, bg="black")
@@ -85,5 +92,6 @@ exitButton.pack(side=LEFT, padx=5)
 
 # initial render
 update_listbox()
+
 
 window.mainloop()
