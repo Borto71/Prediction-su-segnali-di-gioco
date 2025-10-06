@@ -49,19 +49,20 @@ def extract_selected_game_data():
     else:
         print("Errore: script extract_single_game.py non trovato!")
 
-# buttons
+    script_path = os.path.join(".", "normalize_data.py")
+
+# play new game Button
 newGameButton = Button(window, text="Play a new game", command=play_new_game)
 newGameButton.pack(pady=10)
-
-extractDataButton = Button(window, text = "Process the selected game_data", command = extract_selected_game_data)
-extractDataButton.pack(pady=10)
 
 # listbox
 listbox = Listbox(window, bg="azure", fg="black", font=("Arial", 12))
 listbox.pack(padx=20, pady=20, fill=BOTH, expand=True)
 
-# layout
 
+# extract selected game_data Button
+extractDataButton = Button(window, text = "Process the selected game_data", command = extract_selected_game_data)
+extractDataButton.pack(pady=10)
 
 # initial render
 update_listbox()

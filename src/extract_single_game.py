@@ -63,11 +63,10 @@ def extract_left_paddle(frame):
 
 # --- MAIN ---
 if not os.path.exists(log_path):
-    print(f"❌ File log non trovato: {log_path}")
+    print(f"error: file not found: {log_path}")
     sys.exit(1)
 
-print(f"📂 Elaborazione cartella: {DATA_DIR}")
-print(f"🧾 Log file: {log_path}")
+print(f"Processing file: {log_path}")
 
 df_log = pd.read_csv(log_path).reset_index(drop=True)
 df_log['ball_x'] = np.nan
@@ -76,14 +75,14 @@ df_log['right_paddle_y'] = np.nan
 df_log['left_paddle_y'] = np.nan
 
 partite = df_log['partita'].unique()
-print(f"🎮 Partite trovate: {partite}")
+
 
 for partita_id in partite:
-    print(f"➡️  Estrazione features per partita {int(partita_id)}...")
-    npy_file = os.path.join(REPLAY_DIR, f"partita_{int(partita_id)}.npy")
+    print(f"Extracting game features: {int(partita_id)}...")
+    npy_file = os.path.join(REPLAY_DIR, f"game{int(partita_id)}.npy")
 
     if not os.path.exists(npy_file):
-        print(f"  ⚠️  File {npy_file} mancante, salto.")
+        print(f"  File {npy_file} missing, skipped.")
         continue
 
     frames = np.load(npy_file)
@@ -112,4 +111,4 @@ for partita_id in partite:
 
 df_log = df_log.sort_values(['partita', 'step']).reset_index(drop=True)
 df_log.to_csv(features_path, index=False)
-print(f"✅ File features creato in: {features_path}")
+print(f"Extracted data csv created in: {features_path}")
