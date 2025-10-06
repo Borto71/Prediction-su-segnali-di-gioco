@@ -1,5 +1,6 @@
 import os
 import subprocess
+import threading
 from tkinter import *
 
 cartella_scelta = ""
@@ -37,7 +38,10 @@ def play_new_game():
     else:
         print("Errore: file play_pong.py non trovato!")
 
-def extract_selected_game_data():
+
+
+#
+def run_extraction(selected, text_widget):
     selected = listbox.get(ACTIVE)
     if not selected:
         print("Nessuna cartella selezionata!")
@@ -45,19 +49,53 @@ def extract_selected_game_data():
     
     script_path = os.path.join(".", "extract_all_features.py")
     if os.path.exists(script_path):
-        print(f"Estrazione dati da {selected}...")
+        text_widget.insert(END, f"Estracting data from {selected}...\n")
         subprocess.run(["python", script_path])
-        print("Estrazione completata!")
+        text_widget.insert(END, "Extraction completed...\n")
     else:
         print("Errore: script extract_single_game.py non trovato!")
 
-    script_path = os.path.join(".", "normalize_data.py")
+    preprocess_script = os.path.join(".", "preprocessing.py")
+    if os.path.exists(preprocess_script):
+            text_widget.insert(END, "Preprocessing data...\n")
+            text_widget.update()
+            subprocess.run(["python", preprocess_script, selected])
+            text_widget.insert(END, "Data preprocessed !\n")
+    else:
+            text_widget.insert(END, "Script normalize_data.py not found.\n")
 
-def on_select(event):
-    global cartella_scelta
+    norm_script = os.path.join(".", "normalize_data.py")
+    if os.path.exists(norm_script):
+            text_widget.insert(END, "Normalizing data...\n")
+            text_widget.update()
+            subprocess.run(["python", norm_script, selected])
+            text_widget.insert(END, "Data Normalized !\n")
+    else:
+            text_widget.insert(END, "Script normalize_data.py not found.\n")
+
+def openTrainingWindow():
     selected = listbox.get(ACTIVE)
-    cartella_scelta = selected
-    print(f"Cartella selezionata: {cartella_scelta}")
+    if not selected:
+        print("Nessuna cartella selezionata!")
+        return
+
+    # nuova finestra
+    new_win = Toplevel(window)
+    new_win.title(f"Elaborazione - {selected}")
+    new_win.geometry("500x400")
+    new_win.config(bg="black")
+
+    Label(new_win, text=f"Processing: {selected}", bg="black", fg="white", font=("Arial", 14)).pack(pady=10)
+
+    text_output = Text(new_win, bg="white", fg="black", height=15, width=55)
+    text_output.pack(padx=10, pady=10)
+
+    Button(new_win, text="Chiudi", command=new_win.destroy).pack(pady=5)
+
+    # avvia thread separato per non bloccare la GUI
+    threading.Thread(target=run_extraction, args=(selected, text_output), daemon=True).start()
+
+    
 
 # label
 label = Label(
@@ -78,19 +116,18 @@ newGameButton.pack(pady=10)
 # listbox
 listbox = Listbox(window, bg="azure", fg="black", font=("Arial", 12))
 listbox.pack(padx=20, pady=20, fill=BOTH, expand=True)
-listbox.bind("<<ListboxSelect>>", on_select)
 
-# extract selected game_data Button
+# buttons + Frame
 button_frame = Frame(window, bg="black")
 button_frame.pack(pady=10)
 
-extractDataButton = Button(button_frame, text="Processa i dati di gioco selezionati", command=extract_selected_game_data)
+extractDataButton = Button(button_frame, text="Processa i dati di gioco selezionati", command=openTrainingWindow)
 extractDataButton.pack(side=LEFT, padx=5)
 
 exitButton = Button(button_frame, text="Esci", command=window.quit)
 exitButton.pack(side=LEFT, padx=5)
 
-# initial render
+# initial update
 update_listbox()
 
 
