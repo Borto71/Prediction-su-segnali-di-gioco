@@ -150,7 +150,7 @@ def openConfigTrainingWindow():
     # DROPOUT = 0.1
 
     sequence_length = 10
-    input_dim = 12
+    input_dim = 9
     num_classes = 3
     patience = 5
     dropout = 0.1

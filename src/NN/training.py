@@ -18,6 +18,7 @@ import matplotlib.pyplot as plt
 # =========================
 SEQ_LEN = 10
 INPUT_DIM = 9                # Aggiorna in base alle feature che usi!
+INPUT_DIM = 9                # Aggiorna in base alle feature che usi!
 NUM_CLASSES = 3
 BATCH_SIZE = 16
 EPOCHS = 120
@@ -74,7 +75,8 @@ class PongDatasetFromCSV(Dataset):
         self.features = [
             'ball_x_std', 'ball_y_std', 'right_paddle_y_std',
             'ball_vx_std', 'ball_vy_std', 'right_paddle_vy_std',
-            'dist_right_std', 'ball_angle_std', 'ball_dir_std',
+            'dist_right_std', 'ball_angle_std', 'ball_dir_std'
+         
 
         ]
         missing = [f for f in self.features if f not in self.df.columns]
