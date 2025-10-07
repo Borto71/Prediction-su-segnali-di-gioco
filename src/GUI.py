@@ -93,7 +93,7 @@ def run_training(epochs, batch_size, sequence_length, input_dim, num_classes, pa
         return
     script_path = os.path.join(".", "./NN/training.py")
     if os.path.exists(script_path):
-        subprocess.run(["python", script_path, selected, batch_size, epochs, sequence_length, input_dim, num_classes, patience, dropout])
+        subprocess.run(["python", script_path, selected, epochs, batch_size, sequence_length, input_dim, num_classes, patience, dropout])
     else:
         print("Errore: file training.py non trovato!")
 

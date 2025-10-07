@@ -35,11 +35,12 @@ USE_CLASS_WEIGHTS = True
 SPLIT_BY_PARTITA = True
 VAL_PARTITE = None
 
+print(sys.argv)
 
 if len(sys.argv) > 3:
     BATCH_SIZE = int(sys.argv[3])
 if len(sys.argv) > 4:
-    EPOCHS = int(sys.argv[4])
+    EPOCHS = int(sys.argv[2])
 
 # Controlla che venga passato almeno un argomento da linea di comando
 if len(sys.argv) < 2:
@@ -76,8 +77,6 @@ class PongDatasetFromCSV(Dataset):
             'ball_x_std', 'ball_y_std', 'right_paddle_y_std',
             'ball_vx_std', 'ball_vy_std', 'right_paddle_vy_std',
             'dist_right_std', 'ball_angle_std', 'ball_dir_std'
-         
-
         ]
         missing = [f for f in self.features if f not in self.df.columns]
         assert not missing, f"Mancano nel CSV: {missing}"
