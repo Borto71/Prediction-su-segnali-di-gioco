@@ -93,7 +93,7 @@ def run_training(epochs, batch_size, sequence_length, input_dim, num_classes, pa
         return
     script_path = os.path.join(".", "./NN/training.py")
     if os.path.exists(script_path):
-        subprocess.run(["python", script_path, selected, epochs, batch_size, sequence_length, input_dim, num_classes, patience, dropout])
+        subprocess.run(["python", script_path, selected, batch_size, epochs, sequence_length, input_dim, num_classes, patience, dropout])
     else:
         print("Errore: file training.py non trovato!")
 
@@ -168,6 +168,8 @@ def openConfigTrainingWindow():
     entry_epochs = Entry(input_frame, width=10)
     entry_epochs.insert(0, "50")
     entry_epochs.grid(row=0, column=1, padx=5, pady=5)
+    entry_epochs.config(state=NORMAL)  # Ensure entry is enabled
+    entry_epochs.focus_set()           # Set focus for immediate input
 
     entry_batch = Entry(input_frame, width=10)
     entry_batch.insert(0, "32")
@@ -197,10 +199,7 @@ def openConfigTrainingWindow():
     button_frame2 = Frame(new_win, bg="black")
     button_frame2.pack(pady=10)
 
-    extractDataButton = Button(
-        button_frame2,
-        text="Train and test the model",
-        command=lambda: run_training(
+    newExtractDataButton = Button(button_frame2, text="Avvia il training", command=lambda: run_training(
             entry_epochs.get(),
             entry_batch.get(),
             entry_seq_len.get(),
@@ -208,9 +207,11 @@ def openConfigTrainingWindow():
             entry_num_classes.get(),
             entry_patience.get(),
             entry_dropout.get()
-        )
-    )
-    extractDataButton.pack(side=LEFT, padx=5)
+        ))
+    newExtractDataButton.pack(side=LEFT, padx=5)
+
+    resumeExtractDataButton = Button(button_frame2, text="Riprendi il training")
+    resumeExtractDataButton.pack(side=LEFT, padx=5)
 
     exitButton = Button(button_frame2, text="Esci", command=new_win.quit)
     exitButton.pack(side=LEFT, padx=5)
