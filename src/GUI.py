@@ -1,4 +1,5 @@
 import os
+import re
 import subprocess
 import threading
 from tkinter import *
@@ -41,13 +42,23 @@ def play_new_game():
 
 
 
-#
+
+
 def run_extraction(selected, text_widget, progress_bar, btn_next):
     selected = listbox.get(ACTIVE)
     if not selected:
         print("Nessuna cartella selezionata!")
         return
     
+    # se file pong_data_features_preprocessed_normalized exist skip extraction and preprocessing
+    if os.path.exists(f"./{selected}/pong_data_features_preprocessed_normalized.csv"):
+        text_widget.insert(END, f"Data for {selected} already extracted and preprocessed.\n")
+        progress_bar['value'] = int(progress_bar['maximum'])
+        progress_bar.update_idletasks()
+        if btn_next:
+            btn_next.config(state=NORMAL)
+        return
+
     script_path = os.path.join(".", "extract_all_features.py")
     if os.path.exists(script_path):
         text_widget.insert(END, f"Estracting data from {selected}...\n")
@@ -85,14 +96,21 @@ def updatePB(progress_bar, btn_next=None):
         if btn_next:
             btn_next.config(state=NORMAL)
 
+def updatePB(progress_bar, btn_next=None, value=None):
+    print("@@@@", value, progress_bar['value'], progress_bar['maximum'])
+    if value and progress_bar['value'] < progress_bar['maximum'] and value <= progress_bar['maximum']:
+        progress_bar['value'] = value
+        progress_bar.update_idletasks()
+        if btn_next and value == progress_bar['maximum']:
+            btn_next.config(state=NORMAL)
+
+
 # train and test function
 def run_training(epochs, batch_size, sequence_length, patience, dropout, load_model, text_output, progress_bar, btn_next):
     selected = listbox.get(ACTIVE)
     if not selected:
         print("Nessuna cartella selezionata!")
         return
-
-
 
     cmd = ["python", "./NN/training.py", selected, epochs, batch_size, sequence_length, patience, dropout, load_model]
 
@@ -104,9 +122,6 @@ def run_training(epochs, batch_size, sequence_length, patience, dropout, load_mo
         text=True
     )
 
-    total_epochs = epochs  # o leggi dal file se vuoi dinamico
-    current_epoch = 0
-
     for line in process.stdout:
         # stampa anche in console
         print(line, end="")
@@ -114,16 +129,15 @@ def run_training(epochs, batch_size, sequence_length, patience, dropout, load_mo
         # aggiorna la TextBox nella GUI
         text_output.insert(END, line)
         text_output.see(END)  # scroll automatico
+        
+        currentPatience = 0
 
-        # aggiornamento progress bar se trova "Epoch X/Y"
-        if "Epoch" in line and "/" in line:
-            try:
-                epoch_part = line.split("Epoch")[1].split("/")[0].strip()
-                current_epoch = int(epoch_part)
-                #progress_bar['value'] = min(current_epoch, progress_bar['maximum'])
-                updatePB(progress_bar, btn_next)
-            except:
-                pass
+        # aggiornamento progressivo su patience non lineare
+        if line.startswith("Early stopping patience:"):
+            match = re.search(r"Early stopping patience: (\d+)/(\d+)", line)
+            if match:
+                currentPatience = int(match.group(1)) if int(match.group(1)) > currentPatience else currentPatience
+                updatePB(progress_bar, btn_next, currentPatience)
 
     process.wait()
     text_output.insert(END, "\n--- Training completato ---\n")
@@ -273,12 +287,12 @@ def OutputTrainingWindow(epochs, batch_size, sequence_length, patience, dropout,
     ## append progress bar
     progress_bar = ttk.Progressbar(new_win, length=300, mode='determinate', maximum=patience)
     progress_bar.pack(pady=10)
-    progress_bar['value'] = 0  # inizializza a 0
+    progress_bar['value'] = 0
 
     button_frame = Frame(new_win, bg="black")
     button_frame.pack(pady=10)
 
-    btn_next = Button(button_frame, text="Close", command=window.destroy)
+    btn_next = Button(button_frame, text="Close", command=new_win.destroy)
     btn_next.pack(side=LEFT, padx=5)
     btn_next.config(state=DISABLED)
 
