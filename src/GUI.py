@@ -131,7 +131,10 @@ def run_training(epochs, batch_size, sequence_length, patience, dropout, load_mo
             if match:
                 currentPatience = int(match.group(1)) if int(match.group(1)) > currentPatience else currentPatience
                 updatePB(progress_bar, btn_next, currentPatience)
-
+        if line.startswith("Epoch "):
+            match = re.search(r"Epoch (\d+)/(\d+)", line)
+            if match and int(match.group(1)) == int(match.group(2)):
+                updatePB(progress_bar, btn_next, int(patience))
     process.wait()
     text_output.insert(END, "\n--- Training completato ---\n")
     text_output.see(END)
