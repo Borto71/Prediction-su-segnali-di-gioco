@@ -86,16 +86,52 @@ def updatePB(progress_bar, btn_next=None):
             btn_next.config(state=NORMAL)
 
 # train and test function
-def run_training(epochs, batch_size, sequence_length, input_dim, num_classes, patience, dropout):
+def run_training(epochs, batch_size, sequence_length, patience, dropout, load_model, text_output, progress_bar, btn_next):
     selected = listbox.get(ACTIVE)
     if not selected:
         print("Nessuna cartella selezionata!")
         return
-    script_path = os.path.join(".", "./NN/training.py")
-    if os.path.exists(script_path):
-        subprocess.run(["python", script_path, selected, epochs, batch_size, sequence_length, input_dim, num_classes, patience, dropout])
-    else:
-        print("Errore: file training.py non trovato!")
+
+
+
+    cmd = ["python", "./NN/training.py", selected, epochs, batch_size, sequence_length, patience, dropout, load_model]
+
+    process = subprocess.Popen(
+        cmd,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        bufsize=1,
+        text=True
+    )
+
+    total_epochs = epochs  # o leggi dal file se vuoi dinamico
+    current_epoch = 0
+
+    for line in process.stdout:
+        # stampa anche in console
+        print(line, end="")
+        
+        # aggiorna la TextBox nella GUI
+        text_output.insert(END, line)
+        text_output.see(END)  # scroll automatico
+
+        # aggiornamento progress bar se trova "Epoch X/Y"
+        if "Epoch" in line and "/" in line:
+            try:
+                epoch_part = line.split("Epoch")[1].split("/")[0].strip()
+                current_epoch = int(epoch_part)
+                #progress_bar['value'] = min(current_epoch, progress_bar['maximum'])
+                updatePB(progress_bar, btn_next)
+            except:
+                pass
+
+    process.wait()
+    text_output.insert(END, "\n--- Training completato ---\n")
+    text_output.see(END)
+    
+
+
+
 
 
 def openTrainingWindow():
@@ -128,6 +164,7 @@ def openTrainingWindow():
     btn_next.config(state=DISABLED)
     Button(button_frame, text="Chiudi", command=new_win.destroy).pack(side=LEFT, pady=5)
 
+
     # avvia thread separato per non bloccare la GUI
     threading.Thread(target=run_extraction, args=(selected, text_output, progress_bar, btn_next), daemon=True).start()
 
@@ -152,15 +189,14 @@ def openConfigTrainingWindow():
     sequence_length = 10
     input_dim = 9
     num_classes = 3
-    patience = 5
+    patience = 20
     dropout = 0.1
 
     # Labels
     Label(input_frame, text="Epochs:", bg="black", fg="white", font=("Arial", 12)).grid(row=0, column=0, padx=5, pady=5, sticky=E)
     Label(input_frame, text="Batch Size:", bg="black", fg="white", font=("Arial", 12)).grid(row=1, column=0, padx=5, pady=5, sticky=E)
     Label(input_frame, text="Sequence Length:", bg="black", fg="white", font=("Arial", 12)).grid(row=2, column=0, padx=5, pady=5, sticky=E)
-    Label(input_frame, text="Input Dim:", bg="black", fg="white", font=("Arial", 12)).grid(row=3, column=0, padx=5, pady=5, sticky=E)
-    Label(input_frame, text="Num Classes:", bg="black", fg="white", font=("Arial", 12)).grid(row=4, column=0, padx=5, pady=5, sticky=E)
+
     Label(input_frame, text="Patience:", bg="black", fg="white", font=("Arial", 12)).grid(row=5, column=0, padx=5, pady=5, sticky=E)
     Label(input_frame, text="Dropout:", bg="black", fg="white", font=("Arial", 12)).grid(row=6, column=0, padx=5, pady=5, sticky=E)
 
@@ -179,14 +215,6 @@ def openConfigTrainingWindow():
     entry_seq_len.insert(0, str(sequence_length))
     entry_seq_len.grid(row=2, column=1, padx=5, pady=5)
 
-    entry_input_dim = Entry(input_frame, width=10)
-    entry_input_dim.insert(0, str(input_dim))
-    entry_input_dim.grid(row=3, column=1, padx=5, pady=5)
-
-    entry_num_classes = Entry(input_frame, width=10)
-    entry_num_classes.insert(0, str(num_classes))
-    entry_num_classes.grid(row=4, column=1, padx=5, pady=5)
-
     entry_patience = Entry(input_frame, width=10)
     entry_patience.insert(0, str(patience))
     entry_patience.grid(row=5, column=1, padx=5, pady=5)
@@ -199,22 +227,66 @@ def openConfigTrainingWindow():
     button_frame2 = Frame(new_win, bg="black")
     button_frame2.pack(pady=10)
 
-    newExtractDataButton = Button(button_frame2, text="Avvia il training", command=lambda: run_training(
+    newExtractDataButton = Button(button_frame2, text="Avvia il training", command=lambda: OutputTrainingWindow(
             entry_epochs.get(),
             entry_batch.get(),
             entry_seq_len.get(),
-            entry_input_dim.get(),
-            entry_num_classes.get(),
             entry_patience.get(),
-            entry_dropout.get()
+            entry_dropout.get(),
+            "False"
         ))
     newExtractDataButton.pack(side=LEFT, padx=5)
 
-    resumeExtractDataButton = Button(button_frame2, text="Riprendi il training")
+    resumeExtractDataButton = Button(button_frame2, text="Riprendi il training", command=lambda: OutputTrainingWindow(
+            entry_epochs.get(),
+            entry_batch.get(),
+            entry_seq_len.get(),
+            entry_patience.get(),
+            entry_dropout.get(),
+            "True"
+    ))
+
     resumeExtractDataButton.pack(side=LEFT, padx=5)
 
     exitButton = Button(button_frame2, text="Esci", command=new_win.quit)
     exitButton.pack(side=LEFT, padx=5)
+
+
+
+
+def OutputTrainingWindow(epochs, batch_size, sequence_length, patience, dropout, load_model):
+    selected = listbox.get(ACTIVE)
+    if not selected:
+        print("Nessuna cartella selezionata!")
+        return
+    # nuova finestra
+    new_win = Toplevel(window)
+    new_win.title(f"Training Output")
+    new_win.geometry("1500x1000")
+    new_win.config(bg="black")
+
+    Label(new_win, text=f"Processing: {selected}", bg="black", fg="white", font=("Arial", 14)).pack(pady=10)
+
+    text_output = Text(new_win, bg="white", fg="black", height=50, width=200)
+    text_output.pack(padx=10, pady=10)
+
+    ## append progress bar
+    progress_bar = ttk.Progressbar(new_win, length=300, mode='determinate', maximum=patience)
+    progress_bar.pack(pady=10)
+    progress_bar['value'] = 0  # inizializza a 0
+
+    button_frame = Frame(new_win, bg="black")
+    button_frame.pack(pady=10)
+
+    btn_next = Button(button_frame, text="Close", command=window.destroy)
+    btn_next.pack(side=LEFT, padx=5)
+    btn_next.config(state=DISABLED)
+
+
+    # avvia thread separato per non bloccare la GUI
+    threading.Thread(target=run_training, args=(epochs, batch_size, sequence_length, patience, dropout, load_model, text_output, progress_bar, btn_next), daemon=True).start()
+
+
 
 # label
 label = Label(

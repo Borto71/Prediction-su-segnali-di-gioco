@@ -13,9 +13,13 @@ from torch.utils.data import Dataset, DataLoader, Subset, WeightedRandomSampler
 from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay, f1_score, classification_report, precision_recall_fscore_support
 import matplotlib.pyplot as plt
 
+
+sys.stdout.reconfigure(line_buffering=True)
 # =========================
 # CONFIGURAZIONE
 # =========================
+LOAD_MODEL = False
+
 SEQ_LEN = 10
 INPUT_DIM = 9                # Aggiorna in base alle feature che usi!
 INPUT_DIM = 9                # Aggiorna in base alle feature che usi!
@@ -37,10 +41,25 @@ VAL_PARTITE = None
 
 print(sys.argv)
 
+
 if len(sys.argv) > 3:
-    BATCH_SIZE = int(sys.argv[3])
-if len(sys.argv) > 4:
     EPOCHS = int(sys.argv[2])
+if len(sys.argv) > 4:
+    BATCH_SIZE = int(sys.argv[3])
+
+if len(sys.argv) > 5:
+    SEQ_LEN = int(sys.argv[4])
+
+if len(sys.argv) > 6:
+    PATIENCE = int(sys.argv[5])
+
+if len(sys.argv) > 7:
+    DROPOUT = float(sys.argv[6])
+
+if len(sys.argv) > 7:
+    LOAD_MODEL = True if sys.argv[7] == "True" else False
+
+
 
 # Controlla che venga passato almeno un argomento da linea di comando
 if len(sys.argv) < 2:
@@ -63,6 +82,7 @@ print(f"  input_dim   = {INPUT_DIM}")
 print(f"  num_classes = {NUM_CLASSES}")
 print(f"  patience    = {PATIENCE}")
 print(f"  dropout     = {DROPOUT}")
+print(f"  load Model     = {LOAD_MODEL}")
 
 
 # =========================
@@ -168,7 +188,7 @@ def choose_val_partite(df, target_ratio=0.2):
 # =========================
 # TRAIN
 # =========================
-def train(load_model=False):
+def train(load_model=LOAD_MODEL):
     os.makedirs(os.path.dirname(CHECKPOINT_PATH), exist_ok=True)
     full_df = pd.read_csv(CSV_PATH)
     dataset = PongDatasetFromCSV(CSV_PATH, seq_len=SEQ_LEN)
@@ -332,4 +352,4 @@ def train(load_model=False):
     print(classification_report(all_tgts, all_preds, digits=3))
 
 if __name__ == "__main__":
-    train(load_model=False)
+    train(load_model=LOAD_MODEL)
