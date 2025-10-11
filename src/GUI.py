@@ -63,7 +63,7 @@ def run_extraction(selected, text_widget, progress_bar, btn_next):
     if os.path.exists(script_path):
         text_widget.insert(END, f"Estracting data from {selected}...\n")
         subprocess.run(["python", script_path])
-        updatePB(progress_bar, btn_next)
+        updatePB(progress_bar, btn_next, 1)
         text_widget.insert(END, "Extraction completed...\n")
     else:
         print("Errore: script extract_single_game.py non trovato!")
@@ -73,7 +73,7 @@ def run_extraction(selected, text_widget, progress_bar, btn_next):
             text_widget.insert(END, "Preprocessing data...\n")
             text_widget.update()
             subprocess.run(["python", preprocess_script, selected])
-            updatePB(progress_bar, btn_next)
+            updatePB(progress_bar, btn_next, 2)
             text_widget.insert(END, "Data preprocessed !\n")
     else:
             text_widget.insert(END, "Script normalize_data.py not found.\n")
@@ -83,21 +83,14 @@ def run_extraction(selected, text_widget, progress_bar, btn_next):
             text_widget.insert(END, "Normalizing data...\n")
             text_widget.update()
             subprocess.run(["python", norm_script, selected])
-            updatePB(progress_bar, btn_next)
+            updatePB(progress_bar, btn_next, 3)
             text_widget.insert(END, "Data Normalized !\n")
     else:
             text_widget.insert(END, "Script normalize_data.py not found.\n")
-    updatePB(progress_bar, btn_next)
-
-def updatePB(progress_bar, btn_next=None):
-    if progress_bar['value'] < progress_bar['maximum']:
-        progress_bar['value'] += 10
-    else:
-        if btn_next:
-            btn_next.config(state=NORMAL)
+    updatePB(progress_bar, btn_next, 4)
 
 def updatePB(progress_bar, btn_next=None, value=None):
-    print("@@@@", value, progress_bar['value'], progress_bar['maximum'])
+    # [DEBUG] print("@@@@", value, progress_bar['value'], progress_bar['maximum'])
     if value and progress_bar['value'] < progress_bar['maximum'] and value <= progress_bar['maximum']:
         progress_bar['value'] = value
         progress_bar.update_idletasks()
@@ -166,7 +159,7 @@ def openTrainingWindow():
     text_output.pack(padx=10, pady=10)
 
     ## append progress bar
-    progress_bar = ttk.Progressbar(new_win, length=300, mode='determinate', maximum=30)
+    progress_bar = ttk.Progressbar(new_win, length=300, mode='determinate', maximum=4)
     progress_bar.pack(pady=10)
     progress_bar['value'] = 0  # inizializza a 0
 
