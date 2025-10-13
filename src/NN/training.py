@@ -16,19 +16,19 @@ import matplotlib.pyplot as plt
 # =========================
 # CONFIGURAZIONE
 # =========================
-SEQ_LEN = 10
-INPUT_DIM = 12                # Aggiorna in base alle feature che usi!
-NUM_CLASSES = 3
-BATCH_SIZE = 16
-EPOCHS = 120
-LR = 5e-4
-DROPOUT = 0.1
-DEVICE = 'cuda' if torch.cuda.is_available() else 'cpu'
-CHECKPOINT_PATH = "checkpoints/best_checkpoint.pth"
-PATIENCE = 20
+SEQ_LEN = 10 # lunghezza sequenza temporale
+INPUT_DIM = 9  # numero di feature in input
+NUM_CLASSES = 3 # numero di classi (fermo, su, giù)
+BATCH_SIZE = 16 # batch size per training
+EPOCHS = 120 # numero massimo di epoche
+LR = 5e-4 # learning rate
+DROPOUT = 0.1 # dropout nel modello
+DEVICE = 'cuda' if torch.cuda.is_available() else 'cpu' 
+CHECKPOINT_PATH = "checkpoints/best_checkpoint.pth" # percorso per salvare il modello
+PATIENCE = 20 # epoche di pazienza per early stopping
 
 # Attiva FocalLoss con pesi forti sulle classi minori
-USE_FOCAL_LOSS = True
+USE_FOCAL_LOSS = True 
 USE_CLASS_WEIGHTS = True
 
 SPLIT_BY_PARTITA = True
@@ -45,37 +45,53 @@ CSV_PATH = os.path.join(sys.argv[1].strip(), "pong_data_features_preprocessed_no
 # =========================
 class PongDatasetFromCSV(Dataset):
     def __init__(self, csv_path, seq_len=50):
-        self.seq_len = seq_len
-        self.df = pd.read_csv(csv_path)
-        # Usa SOLO colonne presenti nel CSV
-        self.features = [
+
+        self.seq_len = seq_len # lunghezza sequenza temporale
+
+        self.df = pd.read_csv(csv_path)  # Legge l'intero file CSV in un DataFrame pandas
+
+        self.features = [ # Features usate per predire l'azione
             'ball_x_std', 'ball_y_std', 'right_paddle_y_std',
             'ball_vx_std', 'ball_vy_std', 'right_paddle_vy_std',
-            'dist_right_std', 'ball_angle_std', 'ball_dir_std',
-            'relative_vy_right_std',
-            'aligns_right', 'opposes_right'
+            'dist_right_std', 'ball_angle_std', 'ball_dir_std'
+
         ]
+
+        # Controlla che tutte le colonne richieste siano effettivamente nel CSV.
+        # Se manca anche solo una, viene sollevato un errore esplicativo.
         missing = [f for f in self.features if f not in self.df.columns]
         assert not missing, f"Mancano nel CSV: {missing}"
 
+        
+        # Liste dove accumuliamo i dati trasformati in sequenze:
+        # - self.sequences conterrà gli input (finestre temporali di feature)
+        # - self.targets conterrà le etichette corrispondenti (azioni)
+        # - self.seq_partita terrà traccia di quale partita proviene ogni sequenza
         self.sequences = []
         self.targets = []
         self.seq_partita = []
 
-        grouped = self.df.groupby('partita', sort=False)
-        for partita_id, part_df in grouped:
-            part_data = part_df[self.features].values.astype(np.float32)
-            part_actions = part_df['action'].values.astype(np.int64)
-            for i in range(len(part_df) - seq_len):
-                self.sequences.append(part_data[i:i+seq_len])
-                self.targets.append(part_actions[i+seq_len])
-                self.seq_partita.append(partita_id)
-        self.length = len(self.sequences)
 
-    def __len__(self):
+        # Raggruppiamo i dati per 'partita', in modo da generare sequenze
+        # indipendenti per ciascuna partita. Questo è importante per evitare
+        # contaminazione tra partite diverse (data leakage).
+        grouped = self.df.groupby('partita', sort=False)
+
+        for partita_id, part_df in grouped: # iteriamo su ciascuna partita
+            part_data = part_df[self.features].values.astype(np.float32) # estrai feature
+            part_actions = part_df['action'].values.astype(np.int64) # estrai azioni
+
+            for i in range(len(part_df) - seq_len):
+                self.sequences.append(part_data[i:i+seq_len]) #  sequenza di input
+                self.targets.append(part_actions[i+seq_len]) # azione target
+                self.seq_partita.append(partita_id) # id della partita
+
+        self.length = len(self.sequences) # numero totale di sequenze
+
+    def __len__(self): # restituisce la lunghezza del dataset
         return self.length
 
-    def __getitem__(self, idx):
+    def __getitem__(self, idx): # resituisce l'i-esimo elemento del dataset
         x_seq = self.sequences[idx]
         y_label = self.targets[idx]
         return torch.tensor(x_seq), torch.tensor(y_label)
@@ -83,18 +99,24 @@ class PongDatasetFromCSV(Dataset):
 # =========================
 # MODELLO
 # =========================
-class PongTransformer(nn.Module):
+class PongTransformer(nn.Module): # Transformer encoder per predire la prossima mossa in Pong
     def __init__(self, input_dim, seq_len, num_classes,
-                 d_model=128, nhead=4, num_layers=2, dropout=0.1,
-                 pooling="last"):
+                 d_model = 128, nhead = 4, num_layers = 2, dropout = 0.1,
+                 pooling = "last"): 
+        
         super().__init__()
         self.input_proj = nn.Linear(input_dim, d_model)
+
         self.norm = nn.LayerNorm(d_model)
+
         self.pos_embedding = nn.Parameter(torch.randn(1, seq_len, d_model))
+
         encoder_layer = nn.TransformerEncoderLayer(
             d_model=d_model, nhead=nhead, batch_first=True, dropout=dropout
         )
+
         self.encoder = nn.TransformerEncoder(encoder_layer, num_layers=num_layers)
+
         self.pooling = pooling
         self.classifier = nn.Sequential(
             nn.Linear(d_model, 64),
@@ -110,7 +132,7 @@ class PongTransformer(nn.Module):
         if self.pooling == "last":
             x = x[:, -1, :]
         else:
-            x = x.mean(dim=1)
+            x = x.mean(dim = 1)
         return self.classifier(x)
 
 # =========================
@@ -170,6 +192,15 @@ def train(load_model=False):
 
         if len(train_idx) == 0:
             raise ValueError("Il set di training è vuoto! Controlla SPLIT_BY_PARTITA e il numero di partite.")
+        # Se lo split per partita non produce sequenze di validazione, ripieghiamo su uno split stratificato standard.
+        if len(val_idx) == 0:
+            print("[ATTENZIONE] Nessuna sequenza valida ottenuta dallo split per partita; uso split stratificato standard.")
+            from sklearn.model_selection import train_test_split
+            indices = np.arange(len(dataset))
+            train_idx, val_idx = train_test_split(
+                indices, test_size=0.2, random_state=42, shuffle=True, stratify=dataset.targets
+            )
+            split_by_partita = False
     else:
         from sklearn.model_selection import train_test_split
         indices = np.arange(len(dataset))
@@ -224,6 +255,8 @@ def train(load_model=False):
         optimizer.load_state_dict(ckpt['optimizer_state_dict'])
         best_val_f1 = ckpt.get('best_val_f1', -1.0)
         start_epoch = ckpt.get('epoch', 0) + 1
+        # Manteniamo il best_state coerente con il modello ricaricato, così eventuali early stop funzionano correttamente.
+        best_state = copy.deepcopy(model.state_dict())
 
     for epoch in range(start_epoch, EPOCHS):
         model.train()
@@ -298,6 +331,35 @@ def train(load_model=False):
 
     if best_state is not None:
         model.load_state_dict(best_state)
+
+    # Valutiamo il modello migliore salvato sul validation set completo.
+    model.eval()
+    val_loss, v_correct, v_total = 0.0, 0, 0
+    all_preds, all_tgts = [], []
+    with torch.no_grad():
+        for xb, yb in val_loader:
+            xb, yb = xb.to(DEVICE), yb.to(DEVICE)
+            out = model(xb)
+            loss = criterion(out, yb)
+            val_loss += loss.item() * xb.size(0)
+            preds = out.argmax(1)
+            v_correct += (preds == yb).sum().item()
+            v_total += xb.size(0)
+            all_preds.extend(preds.cpu().numpy())
+            all_tgts.extend(yb.cpu().numpy())
+
+    val_loss /= max(1, v_total)
+    val_acc = v_correct / max(1, v_total)
+    val_f1_weighted = f1_score(all_tgts, all_preds, average='weighted', zero_division=0)
+    val_f1_macro = f1_score(all_tgts, all_preds, average='macro', zero_division=0)
+    prec, recall, f1s, support = precision_recall_fscore_support(all_tgts, all_preds, labels=[0,1,2], zero_division=0)
+
+    print("\n== Metriche con il miglior modello ==")
+    print(f"Val Loss: {val_loss:.4f} Acc: {val_acc:.3f} "
+          f"F1w: {val_f1_weighted:.4f} F1m: {val_f1_macro:.4f}")
+    print(f"  Classe 0 - Prec: {prec[0]:.3f} Rec: {recall[0]:.3f} F1: {f1s[0]:.3f} | "
+          f"1 - Prec: {prec[1]:.3f} Rec: {recall[1]:.3f} F1: {f1s[1]:.3f} | "
+          f"2 - Prec: {prec[2]:.3f} Rec: {recall[2]:.3f} F1: {f1s[2]:.3f}")
 
     cm = confusion_matrix(all_tgts, all_preds, labels=list(range(NUM_CLASSES)))
     disp = ConfusionMatrixDisplay(confusion_matrix=cm, display_labels=[str(i) for i in range(NUM_CLASSES)])
