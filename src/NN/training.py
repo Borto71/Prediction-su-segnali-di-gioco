@@ -20,6 +20,9 @@ except ImportError:
 from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay, f1_score, classification_report, precision_recall_fscore_support
 import matplotlib.pyplot as plt
 
+import seaborn as sns
+from sklearn.decomposition import PCA
+
 
 sys.stdout.reconfigure(line_buffering=True)
 # =========================
@@ -102,9 +105,7 @@ class PongDatasetFromCSV(Dataset):
         self.features = [ # Features usate per predire l'azione
             'ball_x_std', 'ball_y_std', 'right_paddle_y_std',
             'ball_vx_std', 'ball_vy_std', 'right_paddle_vy_std',
-            'dist_right_std', 'ball_angle_std', 'ball_dir_std',
-            'relative_vy_right_std',
-            'aligns_right', 'opposes_right'
+            'dist_right_std', 'ball_angle_std', 'ball_dir_std'
         ]
 
         # Controlla che tutte le colonne richieste siano effettivamente nel CSV.
@@ -380,6 +381,51 @@ def train(load_model=LOAD_MODEL):
 
     print("\nClassification report (validation):")
     print(classification_report(all_tgts, all_preds, digits=3))
+
+    # Distribuzione classi nel dataset
+    plt.figure(figsize=(5,4))
+    sns.countplot(x=dataset.df['action'])
+    plt.title("Distribuzione delle azioni nel dataset")
+    plt.xlabel("Azione (0=stop,1=up,2=down)")
+    plt.ylabel("Frequenza")
+    plt.show()
+
+    # Scatter tra due feature principali 
+    plt.figure(figsize=(7,6))
+    x_feat, y_feat = 'ball_y_std', 'right_paddle_y_std'
+    sns.scatterplot(
+        data=dataset.df.sample(min(3000, len(dataset.df))), 
+        x=x_feat, y=y_feat, hue='action', palette='viridis', alpha=0.6
+    )
+    plt.title(f"Distribuzione delle mosse ({x_feat} vs {y_feat})")
+    plt.show()
+
+    # Heatmap di correlazione
+    # Rosso -> correlazione positiva (due feature crescono insieme)
+    # Blu -> correlazione negativa (una cresce, l'altra decresce)
+    # Bianco -> nessuna correlazione
+    plt.figure(figsize=(10,8))
+    corr = dataset.df[[c for c in dataset.df.columns if c not in ['action', 'partita']]].corr()
+    sns.heatmap(corr, cmap='coolwarm', center=0)
+    plt.title("Matrice di correlazione tra le feature")
+    plt.show()
+
+    # PCA per visualizzare la separazione delle classi
+    features = [c for c in dataset.df.columns if c not in ['action', 'partita']]
+    X = dataset.df[features]
+    y = dataset.df['action']
+
+    pca = PCA(n_components=2)
+    X_pca = pca.fit_transform(X)
+
+    plt.figure(figsize=(7,6))
+    plt.scatter(X_pca[:,0], X_pca[:,1], c=y, cmap='viridis', alpha=0.6)
+    plt.title("PCA - Distribuzione delle azioni nello spazio ridotto")
+    plt.xlabel("PC1")
+    plt.ylabel("PC2")
+    plt.colorbar(label='Azione')
+    plt.show()
+
 
 if __name__ == "__main__":
     train(load_model=LOAD_MODEL)
