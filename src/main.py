@@ -2,83 +2,92 @@ import os
 import sys
 import subprocess
 
+# Percorso assoluto della cartella src: ci serve per costruire percorsi robusti verso gli altri script.
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+
+
+def _resolve_folder(folder: str) -> str:
+    """Restituisce il percorso assoluto verso la cartella dei dati."""
+    return folder if os.path.isabs(folder) else os.path.join(SCRIPT_DIR, folder)
+
+
 def estrai_tutto():
-    result = subprocess.run(["python3", "extract_all_features.py"])
+    # Richiamiamo lo script di estrazione con percorso assoluto, cosi' funziona da qualunque working directory.
+    script_path = os.path.join(SCRIPT_DIR, "extract_all_features.py")
+    result = subprocess.run(["python3", script_path])
     if result.returncode == 0:
         print("\nEstrazione COMPLETATA per tutte le partite!")
     else:
-        print("\nQualcosa è andato storto durante l'estrazione!")
+        print("\nQualcosa e' andato storto durante l'estrazione!")
 
-#def normalizza():
-#    folder = input("Inserisci il nome della cartella dati (es: game_data_20250728): ").strip()
-#    nomefile = "pong_data_features_preprocessed.csv"
-#    file_path = os.path.join(folder, nomefile)
-#    if not os.path.exists(file_path):
-#        print(f"File non trovato: {file_path}")
-#        return
-#    result = subprocess.run(["python3", "normalize_data.py", folder, nomefile])
-#    if result.returncode == 0:
-#        print("Normalizzazione COMPLETATA!")
-#        print(f"Dati normalizzati in: {os.path.join(folder, nomefile.replace('.csv', '_normalized.csv'))}")
-#    else:
-#        print("Errore nella normalizzazione!")
 
 def preprocess_and_normalize():
     folder = input("Inserisci il nome della cartella dati (es: game_data_20250728): ").strip()
-    csv_in = os.path.join(folder, "pong_data_features.csv")
+    folder_path = _resolve_folder(folder)
+    csv_in = os.path.join(folder_path, "pong_data_features.csv")
     if not os.path.exists(csv_in):
         print(f"File non trovato: {csv_in}")
         return
-    result1 = subprocess.run(["python3", "preprocessing.py", folder])
+
+    preprocessing_script = os.path.join(SCRIPT_DIR, "preprocessing.py")
+    result1 = subprocess.run(["python3", preprocessing_script, folder_path])
     if result1.returncode != 0:
         print("Errore nel preprocessing!")
         return
-    preproc_path = os.path.join(folder, "pong_data_features_preprocessed.csv")
+
+    preproc_path = os.path.join(folder_path, "pong_data_features_preprocessed.csv")
     if not os.path.exists(preproc_path):
         print(f"File preprocessato non trovato: {preproc_path}")
         return
-    result2 = subprocess.run(["python3", "normalize_data.py", folder])
+
+    normalize_script = os.path.join(SCRIPT_DIR, "normalize_data.py")
+    result2 = subprocess.run(["python3", normalize_script, folder_path])
     if result2.returncode == 0:
         print("Preprocessing e normalizzazione COMPLETATI!")
-        print(f"Dati finali in: {os.path.join(folder, 'pong_data_features_preprocessed_normalized.csv')}")
+        print(f"Dati finali in: {os.path.join(folder_path, 'pong_data_features_preprocessed_normalized.csv')}")
     else:
         print("Errore nella normalizzazione!")
 
+
 def test_dataset():
     folder = input("Inserisci il nome della cartella dati (es: game_data_20250728): ").strip()
-    result = subprocess.run(["python3", "test_dataset.py", folder])
+    folder_path = _resolve_folder(folder)
+    test_script = os.path.join(SCRIPT_DIR, "test_dataset.py")
+    result = subprocess.run(["python3", test_script, folder_path])
     if result.returncode != 0:
         print("Dataset corrotto")
 
+
 def allena_modello():
     folder = input("Inserisci il nome della cartella dati (es: game_data_20250728): ").strip()
-    result = subprocess.run(["python3", "NN/training.py", folder])
+    folder_path = _resolve_folder(folder)
+    training_script = os.path.join(SCRIPT_DIR, "NN", "training.py")
+    result = subprocess.run(["python3", training_script, folder_path])
     if result.returncode == 0:
         print("Training completato!")
     else:
         print("Errore durante il training!")
 
+
 def valuta_modello():
     folder = input("Inserisci la cartella del nuovo database (es: game_data_20250801): ").strip()
+    folder_path = _resolve_folder(folder)
     nomefile = "pong_data_features_preprocessed_normalized.csv"
-    file_path = os.path.join(folder, nomefile)
+    file_path = os.path.join(folder_path, nomefile)
     if not os.path.exists(file_path):
         print(f"File non trovato: {file_path}")
         return
 
-    # Autodetect path per test_model.py
+    # Individuiamo lo script di valutazione usando percorsi assoluti.
     test_model_paths = [
-        os.path.join("src", "NN", "test_model.py"),
-        os.path.join("NN", "test_model.py"),
-        "test_model.py"
+        os.path.join(SCRIPT_DIR, "NN", "test_model.py"),
+        os.path.join(SCRIPT_DIR, "test_model.py")
     ]
-    found = False
     for path in test_model_paths:
         if os.path.exists(path):
             test_model_path = path
-            found = True
             break
-    if not found:
+    else:
         print("Non trovo il file test_model.py! Controlla dove si trova.")
         return
 
@@ -88,14 +97,15 @@ def valuta_modello():
     else:
         print("Errore durante la valutazione!")
 
+
 def esci():
     print("Ciao!")
     sys.exit()
 
+
 if __name__ == "__main__":
     azioni = {
         "1": ("Estrai TUTTO (file unico: pallina + paddle + opponent, automatico)", estrai_tutto),
-        #"2": ("Normalizza dati", normalizza),
         "2": ("Preprocessing + Normalizza", preprocess_and_normalize),
         "3": ("Test automatici sul dataset", test_dataset),
         "4": ("Allena modello", allena_modello),
