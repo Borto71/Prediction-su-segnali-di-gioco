@@ -253,7 +253,7 @@ def salva_grafici(train_losses, val_losses, train_f1s, val_f1s, all_tgts, all_pr
 def train(load_model=LOAD_MODEL):
     os.makedirs(os.path.dirname(CHECKPOINT_PATH), exist_ok=True)
     full_df = pd.read_csv(CSV_PATH)
-    dataset = PongDatasetFromCSV(CSV_PATH, seq_len=SEQ_LEN)
+    dataset = PongDatasetFromCSV(CSV_PATH, seq_len=SEQ_LEN)  #costruisce sequenze di seq_len frame dal CSV
 
     # === Check numero partite ===
     tutte_le_partite = set(dataset.seq_partita)
@@ -320,9 +320,9 @@ def train(load_model=LOAD_MODEL):
         criterion = nn.CrossEntropyLoss(weight=class_weights)
         print("Uso CrossEntropy con pesi:", class_weights.tolist())
 
-    optimizer = optim.Adam(model.parameters(), lr=LR, weight_decay=0.0)
+    optimizer = optim.Adam(model.parameters(), lr=LR, weight_decay=0.0) #ottimizzatore, aggiorna i pesi usando i gradienti con optimizer.step()
     try:
-        scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='max', patience=6, verbose=True)
+        scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='max', patience=6, verbose=True)  #durante il training, riduce il learning rate quando una certa metrica non migliora
     except TypeError:
         scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='max', patience=6)
 
@@ -347,24 +347,25 @@ def train(load_model=LOAD_MODEL):
     for epoch in range(start_epoch, EPOCHS):
         model.train()
         running_loss, correct, total = 0.0, 0, 0
-
+        # --- Training --- calcoliamo gradiente aggiorniamo i pesi
+        #xb batch di input, yb batch di output (mossa correctta per ciascun sequenza)
         for xb, yb in train_loader:
             xb, yb = xb.to(DEVICE), yb.to(DEVICE)
             optimizer.zero_grad()
-            out = model(xb)
+            out = model(xb)  #diamo l'input batch al modello e otteniamo le predizioni
             loss = criterion(out, yb)
             loss.backward()
-            torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=2.0)
-            optimizer.step()
+            torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=2.0) #limita la grandezza dei gradienti
+            optimizer.step()    #aggiorna i pesi
 
-            running_loss += loss.item() * xb.size(0)
+            running_loss += loss.item() * xb.size(0) #somma della loss totale
             correct += (out.argmax(1) == yb).sum().item()
             total += xb.size(0)
 
         train_loss = running_loss / max(1, total)
         train_acc = correct / max(1, total)
 
-        # --- Validation ---
+        # --- Validation --- valutiamo solo la corretttezza del modellos enza calcolare gradiente o aggiornare i pesi, 
         model.eval()
         val_loss, v_correct, v_total = 0.0, 0, 0
         all_preds, all_tgts = [], []
