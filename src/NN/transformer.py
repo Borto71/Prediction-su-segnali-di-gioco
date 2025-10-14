@@ -39,16 +39,16 @@ class PongTransformer(nn.Module):
         self.pos_embedding = nn.Parameter(torch.randn(1, seq_len, d_model))
 
         # Encoder Transformer
-        encoder_layer = nn.TransformerEncoderLayer(
-            d_model=d_model,
-            nhead=nhead,
-            dim_feedforward=4 * d_model,
-            dropout=dropout,
-            batch_first=True,
-            activation="relu",
-            norm_first=False,
+        encoder_layer = nn.TransformerEncoderLayer( 
+            d_model = d_model,
+            nhead = nhead,
+            dim_feedforward = 4 * d_model,
+            dropout = dropout,
+            batch_first = True, 
+            activation = "relu",
+            norm_first = False,
         )
-        self.encoder = nn.TransformerEncoder(encoder_layer, num_layers=num_layers)
+        self.encoder = nn.TransformerEncoder(encoder_layer, num_layers=num_layers) # stack di encoder
 
         # Classificatore finale
         self.classifier = nn.Sequential(

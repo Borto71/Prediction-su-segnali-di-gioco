@@ -8,7 +8,14 @@ import sys
 import torch
 import torch.nn as nn
 import torch.optim as optim
-from torch.utils.data import Dataset, DataLoader, Subset, WeightedRandomSampler
+from torch.utils.data import Dataset, DataLoader, Subset
+
+try:
+    # Import diretto quando lo script viene eseguito da terminale
+    from transformer import PongTransformer
+except ImportError:
+    # Import relativo quando il modulo viene risolto come parte del pacchetto
+    from .transformer import PongTransformer
 
 from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay, f1_score, classification_report, precision_recall_fscore_support
 import matplotlib.pyplot as plt
@@ -29,14 +36,13 @@ PATIENCE = 20 # epoche di pazienza per early stopping
 
 # Attiva FocalLoss con pesi forti sulle classi minori
 USE_FOCAL_LOSS = True 
-USE_CLASS_WEIGHTS = True
 
 SPLIT_BY_PARTITA = True
 VAL_PARTITE = None
 
 # Controlla che venga passato almeno un argomento da linea di comando
 if len(sys.argv) < 2:
-    raise ValueError("Uso: python preprocessing.py <nome_cartella>")
+    raise ValueError("Uso: python training.py <cartella_dati>")
 
 CSV_PATH = os.path.join(sys.argv[1].strip(), "pong_data_features_preprocessed_normalized.csv")
 
@@ -95,45 +101,6 @@ class PongDatasetFromCSV(Dataset):
         x_seq = self.sequences[idx]
         y_label = self.targets[idx]
         return torch.tensor(x_seq), torch.tensor(y_label)
-
-# =========================
-# MODELLO
-# =========================
-class PongTransformer(nn.Module): # Transformer encoder per predire la prossima mossa in Pong
-    def __init__(self, input_dim, seq_len, num_classes,
-                 d_model = 128, nhead = 4, num_layers = 2, dropout = 0.1,
-                 pooling = "last"): 
-        
-        super().__init__()
-        self.input_proj = nn.Linear(input_dim, d_model)
-
-        self.norm = nn.LayerNorm(d_model)
-
-        self.pos_embedding = nn.Parameter(torch.randn(1, seq_len, d_model))
-
-        encoder_layer = nn.TransformerEncoderLayer(
-            d_model=d_model, nhead=nhead, batch_first=True, dropout=dropout
-        )
-
-        self.encoder = nn.TransformerEncoder(encoder_layer, num_layers=num_layers)
-
-        self.pooling = pooling
-        self.classifier = nn.Sequential(
-            nn.Linear(d_model, 64),
-            nn.ReLU(),
-            nn.Dropout(dropout),
-            nn.Linear(64, num_classes)
-        )
-
-    def forward(self, x):
-        x = self.input_proj(x)
-        x = self.norm(x + self.pos_embedding[:, :x.shape[1], :])
-        x = self.encoder(x)
-        if self.pooling == "last":
-            x = x[:, -1, :]
-        else:
-            x = x.mean(dim = 1)
-        return self.classifier(x)
 
 # =========================
 # LOSS: Focal opzionale
