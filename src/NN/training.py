@@ -176,6 +176,77 @@ def choose_val_partite(df, target_ratio=0.2):
         acc += counts[pid]
     return chosen
 
+def salva_grafici(train_losses, val_losses, train_f1s, val_f1s, all_tgts, all_preds, df, output_dir=os.path.join(sys.argv[1].strip(), "plots")):
+    os.makedirs(output_dir, exist_ok=True)
+
+    # Loss curve
+    plt.figure(figsize=(6,4))
+    plt.plot(train_losses, label="Train Loss")
+    plt.plot(val_losses, label="Val Loss")
+    plt.xlabel("Epoch"); plt.ylabel("Loss"); plt.title("Andamento della Loss")
+    plt.legend()
+    plt.savefig(os.path.join(output_dir, "loss_curve.png")); plt.close()
+
+    # F1 curve
+    plt.figure(figsize=(6,4))
+    plt.plot(train_f1s, label="Train F1")
+    plt.plot(val_f1s, label="Val F1")
+    plt.xlabel("Epoch"); plt.ylabel("F1-score"); plt.title("Andamento F1-score")
+    plt.legend()
+    plt.savefig(os.path.join(output_dir, "f1_curve.png")); plt.close()
+
+    # Matrice di confusione
+    cm = confusion_matrix(all_tgts, all_preds, labels=[0,1,2])
+    disp = ConfusionMatrixDisplay(confusion_matrix=cm, display_labels=["0","1","2"])
+    disp.plot(cmap="Blues", colorbar=False); plt.title("Matrice Confusione"); plt.savefig(os.path.join(output_dir, "confusion_matrix.png")); plt.close()
+
+    # Matrice di confusione con conteggi
+    plt.figure(figsize=(5,4))
+    sns.heatmap(cm, annot=True, fmt="d", cmap="Blues", xticklabels=["0","1","2"], yticklabels=["0","1","2"])
+    plt.title("Confusion Matrix (conteggi)"); plt.xlabel("Predetto"); plt.ylabel("Reale")
+    plt.savefig(os.path.join(output_dir, "confusion_matrix_counts.png")); plt.close()
+
+    # Matrice di confusione normalizzata
+    cm_norm = cm / cm.sum(axis=1, keepdims=True)
+    plt.figure(figsize=(5,4))
+    sns.heatmap(cm_norm, annot=True, fmt=".2f", cmap="Blues", xticklabels=["0","1","2"], yticklabels=["0","1","2"])
+    plt.title("Confusion Matrix Normalizzata"); plt.xlabel("Predetto"); plt.ylabel("Reale")
+    plt.savefig(os.path.join(output_dir, "confusion_matrix_final.png")); plt.close()
+
+    # Countplot azioni
+    plt.figure(figsize=(6,4))
+    sns.countplot(x='action', data=df)
+    plt.title("Distribuzione azioni")
+    plt.savefig(os.path.join(output_dir, "countplot_actions.png")); plt.close()
+
+    # Scatter
+    plt.figure(figsize=(6,6))
+    sns.scatterplot(data=df, x='ball_y_std', y='right_paddle_y_std', hue='action', alpha=0.6, palette='viridis')
+    plt.title("ball_y_std vs right_paddle_y_std"); plt.savefig(os.path.join(output_dir, "scatter_ball_vs_paddle.png")); plt.close()
+
+    # Correlazioni
+    plt.figure(figsize=(10,8))
+    corr = df.select_dtypes(include=[float,int]).corr()
+    sns.heatmap(corr, cmap='coolwarm', center=0, annot=False)
+    plt.title("Matrice Correlazioni"); plt.savefig(os.path.join(output_dir, "heatmap_correlazioni.png")); plt.close()
+
+    # PCA 2D
+    pca = PCA(n_components=2)
+    features = [c for c in df.columns if c not in ['partita','action']]
+    X_pca = pca.fit_transform(df[features].values)
+    pca_df = pd.DataFrame(X_pca, columns=['PC1','PC2'])
+    pca_df['action'] = df['action']
+    plt.figure(figsize=(6,6))
+    sns.scatterplot(data=pca_df, x='PC1', y='PC2', hue='action', alpha=0.6, palette='viridis')
+    plt.title("PCA 2D delle feature"); plt.savefig(os.path.join(output_dir, "pca_2d.png")); plt.close()
+
+    # KDE esempio ball_vy_std
+    plt.figure(figsize=(8,6))
+    sns.kdeplot(data=df, x='ball_vy_std', hue='action', fill=True, common_norm=False, alpha=0.4)
+    plt.title("Distribuzione ball_vy_std per azione"); plt.savefig(os.path.join(output_dir, "kde_ball_vy_std.png")); plt.close()
+
+    print(f"Grafici salvati in '{output_dir}'")
+
 # =========================
 # TRAIN
 # =========================
@@ -270,6 +341,9 @@ def train(load_model=LOAD_MODEL):
         # Manteniamo il best_state coerente con il modello ricaricato, così eventuali early stop funzionano correttamente.
         best_state = copy.deepcopy(model.state_dict())
 
+    train_losses, val_losses = [], []
+    train_f1s, val_f1s = [], []
+
     for epoch in range(start_epoch, EPOCHS):
         model.train()
         running_loss, correct, total = 0.0, 0, 0
@@ -341,6 +415,11 @@ def train(load_model=LOAD_MODEL):
                 print("Early stopping attivato.")
                 break
 
+        train_losses.append(train_loss)
+        val_losses.append(val_loss)
+        train_f1s.append(f1_score(all_tgts, all_preds, average='weighted'))
+        val_f1s.append(val_f1_weighted)
+
     if best_state is not None:
         model.load_state_dict(best_state)
 
@@ -373,59 +452,11 @@ def train(load_model=LOAD_MODEL):
           f"1 - Prec: {prec[1]:.3f} Rec: {recall[1]:.3f} F1: {f1s[1]:.3f} | "
           f"2 - Prec: {prec[2]:.3f} Rec: {recall[2]:.3f} F1: {f1s[2]:.3f}")
 
-    cm = confusion_matrix(all_tgts, all_preds, labels=list(range(NUM_CLASSES)))
-    disp = ConfusionMatrixDisplay(confusion_matrix=cm, display_labels=[str(i) for i in range(NUM_CLASSES)])
-    disp.plot(cmap=plt.cm.Blues)
-    plt.title("Matrice di Confusione - Validation")
-    plt.show()
-
     print("\nClassification report (validation):")
     print(classification_report(all_tgts, all_preds, digits=3))
 
-    # Distribuzione classi nel dataset
-    plt.figure(figsize=(5,4))
-    sns.countplot(x=dataset.df['action'])
-    plt.title("Distribuzione delle azioni nel dataset")
-    plt.xlabel("Azione (0=stop,1=up,2=down)")
-    plt.ylabel("Frequenza")
-    plt.show()
-
-    # Scatter tra due feature principali 
-    plt.figure(figsize=(7,6))
-    x_feat, y_feat = 'ball_y_std', 'right_paddle_y_std'
-    sns.scatterplot(
-        data=dataset.df.sample(min(3000, len(dataset.df))), 
-        x=x_feat, y=y_feat, hue='action', palette='viridis', alpha=0.6
-    )
-    plt.title(f"Distribuzione delle mosse ({x_feat} vs {y_feat})")
-    plt.show()
-
-    # Heatmap di correlazione
-    # Rosso -> correlazione positiva (due feature crescono insieme)
-    # Blu -> correlazione negativa (una cresce, l'altra decresce)
-    # Bianco -> nessuna correlazione
-    plt.figure(figsize=(10,8))
-    corr = dataset.df[[c for c in dataset.df.columns if c not in ['action', 'partita']]].corr()
-    sns.heatmap(corr, cmap='coolwarm', center=0)
-    plt.title("Matrice di correlazione tra le feature")
-    plt.show()
-
-    # PCA per visualizzare la separazione delle classi
-    features = [c for c in dataset.df.columns if c not in ['action', 'partita']]
-    X = dataset.df[features]
-    y = dataset.df['action']
-
-    pca = PCA(n_components=2)
-    X_pca = pca.fit_transform(X)
-
-    plt.figure(figsize=(7,6))
-    plt.scatter(X_pca[:,0], X_pca[:,1], c=y, cmap='viridis', alpha=0.6)
-    plt.title("PCA - Distribuzione delle azioni nello spazio ridotto")
-    plt.xlabel("PC1")
-    plt.ylabel("PC2")
-    plt.colorbar(label='Azione')
-    plt.show()
-
+    full_df = pd.read_csv(CSV_PATH)
+    salva_grafici(train_losses, val_losses, train_f1s, val_f1s, all_tgts, all_preds, full_df)
 
 if __name__ == "__main__":
     train(load_model=LOAD_MODEL)
