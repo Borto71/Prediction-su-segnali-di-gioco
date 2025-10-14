@@ -20,6 +20,8 @@ except ImportError:
 from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay, f1_score, classification_report, precision_recall_fscore_support
 import matplotlib.pyplot as plt
 
+
+sys.stdout.reconfigure(line_buffering=True)
 # =========================
 # CONFIGURAZIONE
 # =========================
@@ -33,6 +35,7 @@ DROPOUT = 0.1 # dropout nel modello
 DEVICE = 'cuda' if torch.cuda.is_available() else 'cpu' 
 CHECKPOINT_PATH = "checkpoints/best_checkpoint.pth" # percorso per salvare il modello
 PATIENCE = 20 # epoche di pazienza per early stopping
+LOAD_MODEL = False
 
 # Attiva FocalLoss con pesi forti sulle classi minori
 USE_FOCAL_LOSS = True 
@@ -40,11 +43,51 @@ USE_FOCAL_LOSS = True
 SPLIT_BY_PARTITA = True
 VAL_PARTITE = None
 
+print(sys.argv)
+
+
+if len(sys.argv) > 3:
+    EPOCHS = int(sys.argv[2])
+if len(sys.argv) > 4:
+    BATCH_SIZE = int(sys.argv[3])
+
+if len(sys.argv) > 5:
+    SEQ_LEN = int(sys.argv[4])
+
+if len(sys.argv) > 6:
+    PATIENCE = int(sys.argv[5])
+
+if len(sys.argv) > 7:
+    DROPOUT = float(sys.argv[6])
+
+if len(sys.argv) > 7:
+    LOAD_MODEL = True if sys.argv[7] == "True" else False
+
+
+
 # Controlla che venga passato almeno un argomento da linea di comando
 if len(sys.argv) < 2:
     raise ValueError("Uso: python training.py <cartella_dati>")
 
 CSV_PATH = os.path.join(sys.argv[1].strip(), "pong_data_features_preprocessed_normalized.csv")
+
+# =========================
+# CONFIG
+# =========================
+print(f"Usando device: {DEVICE}")
+if not os.path.exists(CSV_PATH):
+    raise FileNotFoundError(f"File non trovato: {CSV_PATH}")
+print(f"File CSV: {CSV_PATH}")
+print(f"Parametri:")
+print(f"  epochs      = {EPOCHS}")
+print(f"  batch_size  = {BATCH_SIZE}")
+print(f"  seq_len     = {SEQ_LEN}")
+print(f"  input_dim   = {INPUT_DIM}")
+print(f"  num_classes = {NUM_CLASSES}")
+print(f"  patience    = {PATIENCE}")
+print(f"  dropout     = {DROPOUT}")
+print(f"  load Model     = {LOAD_MODEL}")
+
 
 # =========================
 # DATASET
@@ -59,8 +102,9 @@ class PongDatasetFromCSV(Dataset):
         self.features = [ # Features usate per predire l'azione
             'ball_x_std', 'ball_y_std', 'right_paddle_y_std',
             'ball_vx_std', 'ball_vy_std', 'right_paddle_vy_std',
-            'dist_right_std', 'ball_angle_std', 'ball_dir_std'
-
+            'dist_right_std', 'ball_angle_std', 'ball_dir_std',
+            'relative_vy_right_std',
+            'aligns_right', 'opposes_right'
         ]
 
         # Controlla che tutte le colonne richieste siano effettivamente nel CSV.
@@ -134,7 +178,7 @@ def choose_val_partite(df, target_ratio=0.2):
 # =========================
 # TRAIN
 # =========================
-def train(load_model=False):
+def train(load_model=LOAD_MODEL):
     os.makedirs(os.path.dirname(CHECKPOINT_PATH), exist_ok=True)
     full_df = pd.read_csv(CSV_PATH)
     dataset = PongDatasetFromCSV(CSV_PATH, seq_len=SEQ_LEN)
@@ -338,4 +382,4 @@ def train(load_model=False):
     print(classification_report(all_tgts, all_preds, digits=3))
 
 if __name__ == "__main__":
-    train(load_model=False)
+    train(load_model=LOAD_MODEL)
