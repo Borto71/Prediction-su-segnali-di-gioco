@@ -53,14 +53,13 @@ class PongWindow:
         self.score_right = 0
 
         self.root.bind("<KeyPress>", self.on_key_down)
-        self.root.bind("<KeyRelease>", self.on_key_up)
         self.root.protocol("WM_DELETE_WINDOW", self.on_close)
 
         self.root.after(0, self.game_loop)
         self.root.mainloop()
 
     def obs_to_photoimage(self, obs):   
-        scale = 1.2
+        scale = 2
         image = Image.fromarray(obs)
         image = image.resize((int(obs.shape[1]*scale), int(obs.shape[0]*scale)))
         return ImageTk.PhotoImage(image)
