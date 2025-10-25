@@ -4,3 +4,7 @@ src/game_data_20250801/
 src/game_data_20250802/
 src/checkpoints/
 src/NN/__pycache__/
+data/
+checkpoints/
+models/__pycache__/
+/logs/
