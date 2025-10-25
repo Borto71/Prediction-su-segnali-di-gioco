@@ -3,3 +3,4 @@ src/game_data_*
 src/game_data_20250801/
 src/game_data_20250802/
 src/checkpoints/
+src/NN/__pycache__/
