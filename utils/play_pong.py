@@ -53,6 +53,8 @@ class PongWindow:
         self.score_right = 0
 
         self.root.bind("<KeyPress>", self.on_key_down)
+        self.root.bind("<KeyRelease>", self.on_key_up)
+        self.root.bind("<FocusOut>", self.on_focus_out)
         self.root.protocol("WM_DELETE_WINDOW", self.on_close)
 
         self.root.after(0, self.game_loop)
@@ -72,6 +74,9 @@ class PongWindow:
     def on_key_up(self, event):
         key = event.keysym.lower()
         self.pressed_keys.discard(key)
+
+    def on_focus_out(self, _event):
+        self.pressed_keys.clear()
 
     def get_current_action(self):
         if "w" in self.pressed_keys:

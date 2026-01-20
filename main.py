@@ -31,16 +31,21 @@ from models.transformer import PongTransformer
 
 
 DEFAULT_FEATURE_COLUMNS: List[str] = [
-    "ball_x",
-    "ball_y",
-    "right_paddle_y",
-    "left_paddle_y",
-    "ball_vx",
-    "ball_vy",
-    "right_paddle_vy",
-    "dist_right",
-    "offset_right",
+  "ball_x_std", 
+  "ball_y_std",
+  "right_paddle_y_std", 
+  "left_paddle_y_std",
+  "ball_vx_std", 
+  "ball_vy_std", 
+  "right_paddle_vy_std", 
+  "left_paddle_vy_std",
+  "dist_right_std", 
+  "offset_right_std", 
+  "dist_left_std",
+  "ball_angle_std", 
+  "ball_dir_std"
 ]
+
 
 
 def parse_args() -> argparse.Namespace:
